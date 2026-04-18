@@ -30,14 +30,20 @@ jobs:
       - name: Create Android
         run: flutter create .
 
+      - name: Clear Gradle cache
+        run: |
+          rm -rf ~/.gradle/caches
+          rm -rf build
+
       - name: Fix Kotlin version compatibility
         run: |
           sed -i "s/ext.kotlin_version = .*/ext.kotlin_version = '1.9.24'/g" android/build.gradle
+          cat android/build.gradle | grep kotlin_version
 
       - name: Add permissions
         run: |
           FILE=android/app/src/main/AndroidManifest.xml
-          sed -i '/<manifest/a\    <uses-permission android:name="android.permission.CAMERA"/>\n    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>' "$FILE"
+          sed -i '/<manifest/a\    <uses-permission android:name="android.permission.CAMERA"/> <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>' "$FILE"
 
       - name: Clean
         run: flutter clean
