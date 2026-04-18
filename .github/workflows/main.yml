@@ -32,6 +32,13 @@ jobs:
       - name: 🔧 توليد منصة Android
         run: flutter create --platforms=android .
 
+      - name: ⬆️ تحديث إصدار Kotlin إلى 1.9.24
+        run: |
+          # تحديث الإصدار في android/build.gradle
+          sed -i "s/ext.kotlin_version = .*/ext.kotlin_version = '1.9.24'/" android/build.gradle
+          # في بعض الإصدارات الجديدة، قد يكون موجودًا في settings.gradle بدلاً من ذلك
+          sed -i "s/kotlin(\"android\") version \".*\"/kotlin(\"android\") version \"1.9.24\"/" android/settings.gradle || true
+
       - name: ✏️ إضافة الأذونات إلى AndroidManifest.xml
         run: |
           MANIFEST_PATH="android/app/src/main/AndroidManifest.xml"
@@ -42,16 +49,23 @@ jobs:
 
       - name: 🎨 نسخ أيقونة التطبيق إلى مجلدات mipmap
         run: |
-          mkdir -p android/app/src/main/res/mipmap-hdpi
-          mkdir -p android/app/src/main/res/mipmap-mdpi
-          mkdir -p android/app/src/main/res/mipmap-xhdpi
-          mkdir -p android/app/src/main/res/mipmap-xxhdpi
-          mkdir -p android/app/src/main/res/mipmap-xxxhdpi
-          cp assets/icon.png android/app/src/main/res/mipmap-hdpi/ic_launcher.png
-          cp assets/icon.png android/app/src/main/res/mipmap-mdpi/ic_launcher.png
-          cp assets/icon.png android/app/src/main/res/mipmap-xhdpi/ic_launcher.png
-          cp assets/icon.png android/app/src/main/res/mipmap-xxhdpi/ic_launcher.png
-          cp assets/icon.png android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png
+          if [ -f "assets/icon.png" ]; then
+            mkdir -p android/app/src/main/res/mipmap-hdpi
+            mkdir -p android/app/src/main/res/mipmap-mdpi
+            mkdir -p android/app/src/main/res/mipmap-xhdpi
+            mkdir -p android/app/src/main/res/mipmap-xxhdpi
+            mkdir -p android/app/src/main/res/mipmap-xxxhdpi
+            cp assets/icon.png android/app/src/main/res/mipmap-hdpi/ic_launcher.png
+            cp assets/icon.png android/app/src/main/res/mipmap-mdpi/ic_launcher.png
+            cp assets/icon.png android/app/src/main/res/mipmap-xhdpi/ic_launcher.png
+            cp assets/icon.png android/app/src/main/res/mipmap-xxhdpi/ic_launcher.png
+            cp assets/icon.png android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png
+          else
+            echo "⚠️ ملف icon.png غير موجود، سيتم استخدام الأيقونة الافتراضية."
+          fi
+
+      - name: 🔐 إعطاء صلاحيات تنفيذ لـ gradlew
+        run: chmod +x android/gradlew
 
       - name: 🔨 بناء APK Release
         run: flutter build apk --release
