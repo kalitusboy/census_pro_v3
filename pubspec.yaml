@@ -1,0 +1,26 @@
+name: nassim_stati_rurale
+description: النسخة النهائية لتطبيق نسيم للإحصاء الريفي 2026
+version: 1.0.0+1
+publish_to: 'none'
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_inappwebview: ^6.0.0
+  sqflite: ^2.3.0
+  path: ^1.9.0
+  path_provider: ^2.1.0
+  file_picker: ^8.0.0
+  excel: ^4.0.3
+  share_plus: ^10.0.0
+  archive: ^3.6.1
+  permission_handler: ^11.0.0
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/app.html
+    - assets/icon.png
