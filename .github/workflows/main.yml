@@ -32,24 +32,36 @@ jobs:
       - name: 🔧 توليد منصة Android
         run: flutter create --platforms=android .
 
-      - name: ⚙️ ضبط إعدادات Android (compileSdk 35 + Kotlin 1.9.24)
+      - name: 🗑️ حذف ملفات الكاش القديمة لتجنب التعارضات
         run: |
-          # 1. تحديث compileSdk و targetSdk في android/app/build.gradle
+          rm -rf ~/.gradle/caches/
+          rm -rf android/.gradle
+          rm -rf android/app/build
+
+      - name: 📥 تثبيت Android SDK Platform 35 و Build-Tools 35.0.0
+        run: |
+          yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager "platforms;android-35" "build-tools;35.0.0"
+          flutter config --android-sdk $ANDROID_HOME
+
+      - name: ⚙️ ضبط compileSdk 35 و Kotlin 1.9.24 في جميع الملفات
+        run: |
+          # 1. app/build.gradle
           sed -i 's/compileSdk = .*/compileSdk = 35/' android/app/build.gradle
           sed -i 's/targetSdk = .*/targetSdk = 35/' android/app/build.gradle
           
-          # 2. تحديث Kotlin version في android/build.gradle
+          # 2. build.gradle (جذر المشروع)
           sed -i "s/ext.kotlin_version = .*/ext.kotlin_version = '1.9.24'/" android/build.gradle
+          sed -i 's/classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:.*"/classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:1.9.24"/' android/build.gradle
           
-          # 3. في android/build.gradle نضبط أيضًا classpath لمكون Kotlin الإضافي
-          sed -i "s/classpath \"org.jetbrains.kotlin:kotlin-gradle-plugin:.*\"/classpath \"org.jetbrains.kotlin:kotlin-gradle-plugin:1.9.24\"/" android/build.gradle
-          
-          # 4. إذا كان هناك ملف settings.gradle يستخدم plugin DSL، نحدثه أيضًا
+          # 3. settings.gradle (للمشاريع الحديثة)
           if [ -f "android/settings.gradle" ]; then
             sed -i 's/kotlin("android") version ".*"/kotlin("android") version "1.9.24"/' android/settings.gradle
           fi
+          
+          # 4. gradle-wrapper.properties (ترقية Gradle إلى 8.3 لضمان التوافق)
+          sed -i 's/distributionUrl=.*/distributionUrl=https\\:\/\/services.gradle.org\/distributions\/gradle-8.3-all.zip/' android/gradle/wrapper/gradle-wrapper.properties
 
-      - name: ✏️ إضافة الأذونات إلى AndroidManifest.xml
+      - name: ✏️ إضافة أذونات الكاميرا والتخزين
         run: |
           MANIFEST_PATH="android/app/src/main/AndroidManifest.xml"
           sed -i '/<application/i \
@@ -70,20 +82,18 @@ jobs:
             cp assets/icon.png android/app/src/main/res/mipmap-xhdpi/ic_launcher.png
             cp assets/icon.png android/app/src/main/res/mipmap-xxhdpi/ic_launcher.png
             cp assets/icon.png android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png
-          else
-            echo "⚠️ ملف icon.png غير موجود، سيتم استخدام الأيقونة الافتراضية."
           fi
 
-      - name: 🔐 إعطاء صلاحيات تنفيذ لـ gradlew
+      - name: 🔐 صلاحيات تنفيذ gradlew
         run: chmod +x android/gradlew
 
-      - name: 🧹 تنظيف المشروع
+      - name: 🧹 تنظيف Flutter
         run: flutter clean
 
       - name: 🔨 بناء APK Release
-        run: flutter build apk --release
+        run: flutter build apk --release --no-tree-shake-icons
 
-      - name: 📤 رفع APK للتحميل
+      - name: 📤 رفع APK
         uses: actions/upload-artifact@v4
         with:
           name: census2026-release
