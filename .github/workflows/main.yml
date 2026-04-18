@@ -34,14 +34,10 @@ jobs:
         run: |
           sed -i "s/ext.kotlin_version = .*/ext.kotlin_version = '1.9.24'/g" android/build.gradle
 
-      # ✅ إضافة الأذونات بطريقة آمنة (بدون تخريب YAML)
       - name: Add permissions
         run: |
           FILE=android/app/src/main/AndroidManifest.xml
-
-          awk '/<manifest/{print;print "    <uses-permission android:name=\"android.permission.CAMERA\"/>";print "    <uses-permission android:name=\"android.permission.READ_EXTERNAL_STORAGE\"/>";[...]
-
-          mv temp.xml $FILE
+          sed -i '/<manifest/a\    <uses-permission android:name="android.permission.CAMERA"/>\n    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>' "$FILE"
 
       - name: Clean
         run: flutter clean
