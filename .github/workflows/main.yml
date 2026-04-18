@@ -32,12 +32,22 @@ jobs:
       - name: 🔧 توليد منصة Android
         run: flutter create --platforms=android .
 
-      - name: ⬆️ تحديث إصدار Kotlin إلى 1.9.24
+      - name: ⚙️ ضبط إعدادات Android (compileSdk 35 + Kotlin 1.9.24)
         run: |
-          # تحديث الإصدار في android/build.gradle
+          # 1. تحديث compileSdk و targetSdk في android/app/build.gradle
+          sed -i 's/compileSdk = .*/compileSdk = 35/' android/app/build.gradle
+          sed -i 's/targetSdk = .*/targetSdk = 35/' android/app/build.gradle
+          
+          # 2. تحديث Kotlin version في android/build.gradle
           sed -i "s/ext.kotlin_version = .*/ext.kotlin_version = '1.9.24'/" android/build.gradle
-          # في بعض الإصدارات الجديدة، قد يكون موجودًا في settings.gradle بدلاً من ذلك
-          sed -i "s/kotlin(\"android\") version \".*\"/kotlin(\"android\") version \"1.9.24\"/" android/settings.gradle || true
+          
+          # 3. في android/build.gradle نضبط أيضًا classpath لمكون Kotlin الإضافي
+          sed -i "s/classpath \"org.jetbrains.kotlin:kotlin-gradle-plugin:.*\"/classpath \"org.jetbrains.kotlin:kotlin-gradle-plugin:1.9.24\"/" android/build.gradle
+          
+          # 4. إذا كان هناك ملف settings.gradle يستخدم plugin DSL، نحدثه أيضًا
+          if [ -f "android/settings.gradle" ]; then
+            sed -i 's/kotlin("android") version ".*"/kotlin("android") version "1.9.24"/' android/settings.gradle
+          fi
 
       - name: ✏️ إضافة الأذونات إلى AndroidManifest.xml
         run: |
@@ -47,7 +57,7 @@ jobs:
               <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" /> \
               <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />' $MANIFEST_PATH
 
-      - name: 🎨 نسخ أيقونة التطبيق إلى مجلدات mipmap
+      - name: 🎨 نسخ أيقونة التطبيق (إن وجدت)
         run: |
           if [ -f "assets/icon.png" ]; then
             mkdir -p android/app/src/main/res/mipmap-hdpi
@@ -66,6 +76,9 @@ jobs:
 
       - name: 🔐 إعطاء صلاحيات تنفيذ لـ gradlew
         run: chmod +x android/gradlew
+
+      - name: 🧹 تنظيف المشروع
+        run: flutter clean
 
       - name: 🔨 بناء APK Release
         run: flutter build apk --release
