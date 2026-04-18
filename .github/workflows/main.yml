@@ -32,34 +32,29 @@ jobs:
       - name: 🔧 توليد منصة Android
         run: flutter create --platforms=android .
 
-      - name: 🗑️ حذف ملفات الكاش القديمة لتجنب التعارضات
-        run: |
-          rm -rf ~/.gradle/caches/
-          rm -rf android/.gradle
-          rm -rf android/app/build
+      - name: 🗑️ تنظيف كامل لـ Gradle Cache
+        run: rm -rf ~/.gradle/caches/
 
-      - name: 📥 تثبيت Android SDK Platform 35 و Build-Tools 35.0.0
+      - name: ⚙️ حقن إعدادات Kotlin و AGP بالقوة (إعادة كتابة)
         run: |
-          yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager "platforms;android-35" "build-tools;35.0.0"
-          flutter config --android-sdk $ANDROID_HOME
-
-      - name: ⚙️ ضبط compileSdk 35 و Kotlin 1.9.24 في جميع الملفات
-        run: |
-          # 1. app/build.gradle
+          # 1. تعيين ext.kotlin_version في android/build.gradle
+          echo "ext.kotlin_version = '1.9.24'" >> android/build.gradle
+          
+          # 2. تعيين classpath لـ Kotlin Plugin
+          sed -i "s/classpath 'com.android.tools.build:gradle:.*'/classpath 'com.android.tools.build:gradle:8.3.2'/" android/build.gradle
+          sed -i "s/classpath \"org.jetbrains.kotlin:kotlin-gradle-plugin:.*\"/classpath \"org.jetbrains.kotlin:kotlin-gradle-plugin:1.9.24\"/" android/build.gradle
+          
+          # 3. تحديث settings.gradle (إن وجد) - حذف الإصدار القديم وكتابة الجديد
+          if [ -f "android/settings.gradle" ]; then
+            sed -i 's/id "org.jetbrains.kotlin.android" version ".*"/id "org.jetbrains.kotlin.android" version "1.9.24"/' android/settings.gradle
+          fi
+          
+          # 4. ضبط compileSdk و targetSdk في android/app/build.gradle
           sed -i 's/compileSdk = .*/compileSdk = 35/' android/app/build.gradle
           sed -i 's/targetSdk = .*/targetSdk = 35/' android/app/build.gradle
           
-          # 2. build.gradle (جذر المشروع)
-          sed -i "s/ext.kotlin_version = .*/ext.kotlin_version = '1.9.24'/" android/build.gradle
-          sed -i 's/classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:.*"/classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:1.9.24"/' android/build.gradle
-          
-          # 3. settings.gradle (للمشاريع الحديثة)
-          if [ -f "android/settings.gradle" ]; then
-            sed -i 's/kotlin("android") version ".*"/kotlin("android") version "1.9.24"/' android/settings.gradle
-          fi
-          
-          # 4. gradle-wrapper.properties (ترقية Gradle إلى 8.3 لضمان التوافق)
-          sed -i 's/distributionUrl=.*/distributionUrl=https\\:\/\/services.gradle.org\/distributions\/gradle-8.3-all.zip/' android/gradle/wrapper/gradle-wrapper.properties
+          # 5. تحديث gradle-wrapper.properties إلى Gradle 8.6
+          sed -i 's|distributionUrl=.*|distributionUrl=https\\://services.gradle.org/distributions/gradle-8.6-all.zip|' android/gradle/wrapper/gradle-wrapper.properties
 
       - name: ✏️ إضافة أذونات الكاميرا والتخزين
         run: |
@@ -91,7 +86,7 @@ jobs:
         run: flutter clean
 
       - name: 🔨 بناء APK Release
-        run: flutter build apk --release --no-tree-shake-icons
+        run: flutter build apk --release
 
       - name: 📤 رفع APK
         uses: actions/upload-artifact@v4
