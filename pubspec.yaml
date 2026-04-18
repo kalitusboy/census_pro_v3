@@ -1,26 +1,50 @@
-name: nassim_stati_rurale
-description: النسخة النهائية لتطبيق نسيم للإحصاء الريفي 2026
-version: 1.0.0+1
+
+name: census2026
+description: تطبيق إحصاء السكن الريفي 2026
 publish_to: 'none'
+version: 1.0.0+1
+
 environment:
   sdk: '>=3.0.0 <4.0.0'
+
 dependencies:
   flutter:
     sdk: flutter
-  flutter_inappwebview: ^6.0.0
-  sqflite: ^2.3.0
+
+  # قاعدة البيانات
+  sqflite: ^2.3.2
   path: ^1.9.0
-  path_provider: ^2.1.0
-  file_picker: ^8.0.0
+
+  # اختيار الملفات
+  file_picker: ^6.2.0
+
+  # قراءة وتصدير Excel
   excel: ^4.0.3
-  share_plus: ^10.0.0
-  archive: ^3.6.1
-  permission_handler: ^11.0.0
+
+  # الأذونات
+  permission_handler: ^11.3.0
+
+  # WebView لعرض واجهة HTML
+  flutter_inappwebview: ^6.0.0
+
+  # مشاركة الملفات
+  share_plus: ^9.0.0
+
+  # ضغط الصور في ZIP
+  archive: ^3.4.10
+
+  # مسار المجلدات
+  path_provider: ^2.1.2
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
+  flutter_lints: ^3.0.2
+
 flutter:
   uses-material-design: true
+
+  # تأكيد إضافة مجلد assets
   assets:
     - assets/app.html
-    - assets/icon.png
+    # لا تضع icon.png هنا! أيقونة التطبيق لا تُضاف كـ asset عادي.
