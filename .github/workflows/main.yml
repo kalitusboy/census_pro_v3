@@ -10,43 +10,42 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: 📥 Checkout
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: ☕ Setup Java 17
+      - name: Setup Java
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '17'
 
-      - name: 🐦 Setup Flutter
+      - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
           flutter-version: '3.24.0'
 
-      - name: 📦 Install dependencies
+      - name: Install dependencies
         run: flutter pub get
 
-      - name: 🔧 Create Android project
+      - name: Create Android
         run: flutter create .
 
-      # ✅ إصلاح Manifest بدون مشاكل YAML
-      - name: 🔐 Add Permissions
+      # ✅ إضافة الأذونات بطريقة آمنة (بدون تخريب YAML)
+      - name: Add permissions
         run: |
-          MANIFEST=android/app/src/main/AndroidManifest.xml
+          FILE=android/app/src/main/AndroidManifest.xml
 
-          sed -i '/<manifest/a\
-    <uses-permission android:name="android.permission.CAMERA"/>\
-    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>\
-    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>' $MANIFEST
+          awk '/<manifest/{print;print "    <uses-permission android:name=\"android.permission.CAMERA\"/>";print "    <uses-permission android:name=\"android.permission.READ_EXTERNAL_STORAGE\"/>";print "    <uses-permission android:name=\"android.permission.WRITE_EXTERNAL_STORAGE\"/>";next}1' $FILE > temp.xml
 
-      - name: 🧹 Clean
+          mv temp.xml $FILE
+
+      - name: Clean
         run: flutter clean
 
-      - name: 🔨 Build APK
+      - name: Build APK
         run: flutter build apk --release
 
-      - name: 📤 Upload APK
+      - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: census-apk
