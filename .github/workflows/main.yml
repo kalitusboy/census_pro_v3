@@ -27,8 +27,13 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
-      - name: Create Android platform
-        run: flutter create --platforms=android .
+      - name: Create Android platform (with fallback)
+        run: |
+          flutter create --platforms=android .
+          # إذا فشل الأمر أعلاه، جرب الطريقة القديمة
+          if [ ! -d "android" ]; then
+            flutter create .
+          fi
 
       - name: Clear Gradle cache
         run: |
@@ -40,17 +45,13 @@ jobs:
           if [ -f android/build.gradle ]; then
             sed -i "s/ext.kotlin_version = .*/ext.kotlin_version = '1.9.24'/g" android/build.gradle
             cat android/build.gradle | grep kotlin_version
-          else
-            echo "android/build.gradle not found, skipping Kotlin version fix"
           fi
 
       - name: Add permissions
         run: |
           FILE=android/app/src/main/AndroidManifest.xml
           if [ -f "$FILE" ]; then
-            sed -i '/<manifest/a\    <uses-permission android:name="android.permission.CAMERA"/><uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>' "$FILE"
-          else
-            echo "AndroidManifest.xml not found, skipping permissions"
+            sed -i '/<manifest/a\    <uses-permission android:name="android.permission.CAMERA"/> <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>' "$FILE"
           fi
 
       - name: Clean
