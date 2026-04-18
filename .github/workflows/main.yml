@@ -1,4 +1,4 @@
-name: Build APK (WebView Census)
+name: Build APK (nassim _stati_2026)
 
 on:
   push:
@@ -30,12 +30,16 @@ jobs:
       - name: Create Android
         run: flutter create .
 
+      - name: Fix Kotlin version compatibility
+        run: |
+          sed -i "s/ext.kotlin_version = .*/ext.kotlin_version = '1.9.24'/g" android/build.gradle
+
       # ✅ إضافة الأذونات بطريقة آمنة (بدون تخريب YAML)
       - name: Add permissions
         run: |
           FILE=android/app/src/main/AndroidManifest.xml
 
-          awk '/<manifest/{print;print "    <uses-permission android:name=\"android.permission.CAMERA\"/>";print "    <uses-permission android:name=\"android.permission.READ_EXTERNAL_STORAGE\"/>";print "    <uses-permission android:name=\"android.permission.WRITE_EXTERNAL_STORAGE\"/>";next}1' $FILE > temp.xml
+          awk '/<manifest/{print;print "    <uses-permission android:name=\"android.permission.CAMERA\"/>";print "    <uses-permission android:name=\"android.permission.READ_EXTERNAL_STORAGE\"/>";[...]
 
           mv temp.xml $FILE
 
