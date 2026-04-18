@@ -1,4 +1,4 @@
-name: Build APK (nassim _stati_2026)
+name: Build APK (nassim_stati_2026)
 
 on:
   push:
@@ -26,36 +26,6 @@ jobs:
 
       - name: Install dependencies
         run: flutter pub get
-
-      - name: Create Android platform (with fallback)
-        run: |
-          flutter create --platforms=android .
-          # إذا فشل الأمر أعلاه، جرب الطريقة القديمة
-          if [ ! -d "android" ]; then
-            flutter create .
-          fi
-
-      - name: Clear Gradle cache
-        run: |
-          rm -rf ~/.gradle/caches
-          rm -rf build
-
-      - name: Fix Kotlin version compatibility
-        run: |
-          if [ -f android/build.gradle ]; then
-            sed -i "s/ext.kotlin_version = .*/ext.kotlin_version = '1.9.24'/g" android/build.gradle
-            cat android/build.gradle | grep kotlin_version
-          fi
-
-      - name: Add permissions
-        run: |
-          FILE=android/app/src/main/AndroidManifest.xml
-          if [ -f "$FILE" ]; then
-            sed -i '/<manifest/a\    <uses-permission android:name="android.permission.CAMERA"/> <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>' "$FILE"
-          fi
-
-      - name: Clean
-        run: flutter clean
 
       - name: Build APK
         run: flutter build apk --release
