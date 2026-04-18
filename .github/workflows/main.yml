@@ -27,8 +27,8 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
-      - name: Create Android
-        run: flutter create .
+      - name: Create Android platform
+        run: flutter create --platforms=android .
 
       - name: Clear Gradle cache
         run: |
@@ -37,13 +37,21 @@ jobs:
 
       - name: Fix Kotlin version compatibility
         run: |
-          sed -i "s/ext.kotlin_version = .*/ext.kotlin_version = '1.9.24'/g" android/build.gradle
-          cat android/build.gradle | grep kotlin_version
+          if [ -f android/build.gradle ]; then
+            sed -i "s/ext.kotlin_version = .*/ext.kotlin_version = '1.9.24'/g" android/build.gradle
+            cat android/build.gradle | grep kotlin_version
+          else
+            echo "android/build.gradle not found, skipping Kotlin version fix"
+          fi
 
       - name: Add permissions
         run: |
           FILE=android/app/src/main/AndroidManifest.xml
-          sed -i '/<manifest/a\    <uses-permission android:name="android.permission.CAMERA"/> <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>' "$FILE"
+          if [ -f "$FILE" ]; then
+            sed -i '/<manifest/a\    <uses-permission android:name="android.permission.CAMERA"/><uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>' "$FILE"
+          else
+            echo "AndroidManifest.xml not found, skipping permissions"
+          fi
 
       - name: Clean
         run: flutter clean
