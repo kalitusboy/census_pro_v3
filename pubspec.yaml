@@ -11,40 +11,26 @@ dependencies:
   flutter:
     sdk: flutter
 
-  # قاعدة البيانات
- # sqflite: ^2.3.2
- # path: ^1.9.0
-
-  # اختيار الملفات
-  #file_picker: ^6.2.0
-
-  # قراءة وتصدير Excel
-  #excel: ^4.0.3
-
-  # الأذونات
- # permission_handler: ^11.3.0
-
-  # WebView لعرض واجهة HTML
- # flutter_inappwebview: ^6.0.0
-
-  # مشاركة الملفات
-  #share_plus: ^9.0.0
-
-  # ضغط الصور في ZIP
-  #archive: ^3.4.10
-
-  # مسار المجلدات
-  #path_provider: ^2.1.2
+  # تم تفعيل المكتبات (إزالة #) لكي لا ينهار التطبيق
+  sqflite: ^2.3.0
+  path: ^1.9.0
+  file_picker: ^8.0.0
+  excel: ^4.0.3
+  permission_handler: ^11.0.0
+  flutter_inappwebview: ^6.0.0
+  share_plus: ^10.0.0
+  archive: ^3.6.1
+  path_provider: ^2.1.0
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  flutter_lints: ^3.0.2
+  flutter_lints: ^3.0.0
 
 flutter:
   uses-material-design: true
 
-  # تأكيد إضافة مجلد assets
+  # تصحيح المسافات للأصول (مهم جداً لعمل الـ WebView)
   assets:
     - assets/app.html
-    # لا تضع icon.png هنا! أيقونة التطبيق لا تُضاف كـ asset عادي.
+    
