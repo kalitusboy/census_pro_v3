@@ -56,16 +56,17 @@ Future<void> importExcel() async {
           'imageFileName': '',
         };
 
-        // بناء uniqueKey بشكل أفضل
+        // بناء uniqueKey بشكل صحيح ونظيف
         record['uniqueKey'] = '\( {record['program']}_ \){record['address']}_${record['name']}'
-            .replaceAll(RegExp(r'[^a-zA-Z0-9_]'), '_')
+            .replaceAll(RegExp(r'[^a-zA-Z0-9_ ]'), '_')  // تنظيف الحروف
+            .replaceAll(RegExp(r'\s+'), '_')             // استبدال المسافات
             .toLowerCase();
 
         try {
           await db.insert(
             'records',
             record,
-            conflictAlgorithm: ConflictAlgorithm.replace,   // غيرناها إلى replace
+            conflictAlgorithm: ConflictAlgorithm.replace,
           );
           importedCount++;
         } catch (e) {
