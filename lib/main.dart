@@ -42,10 +42,21 @@ class _WebAppState extends State<WebApp> {
   }
 
   Future<void> _initApp() async {
-    // نطلب إذن الكاميرا فقط. التخزين يُدار عبر FilePicker دون أذونات خاصة.
-    await Permission.camera.request();
-  }
+  // طلب الأذونات المطلوبة: الكاميرا والتخزين
+  Map<Permission, PermissionStatus> statuses = await [
+    Permission.camera,
+    Permission.storage,               // لأجهزة أندرويد القديمة
+    Permission.photos,                // بديل حديث للصور
+    Permission.manageExternalStorage, // للوصول الكامل (اختياري)
+  ].request();
 
+  // التحقق من منح الأذونات الأساسية على الأقل
+  if (statuses[Permission.camera]!.isDenied ||
+      statuses[Permission.storage]!.isDenied) {
+    // يمكنك إظهار تنبيه للمستخدم أو إعادة المحاولة
+    print('الأذونات مرفوضة، قد لا يعمل التطبيق بشكل صحيح');
+  }
+  }
   @override
   Widget build(BuildContext context) {
     return Scaffold(
