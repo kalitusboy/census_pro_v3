@@ -42,14 +42,11 @@ android {
         targetSdk = 35
         versionCode = flutterVersionCode.toInteger()
         versionName = flutterVersionName
-        
-        // مهم جداً لتجنب مشاكل MultiDex
         multiDexEnabled true
     }
 
     buildTypes {
         release {
-            // تعطيل الـ minify والـ shrink لتجنب crash في الـ release
             signingConfig = signingConfigs.debug
             minifyEnabled false
             shrinkResources false
