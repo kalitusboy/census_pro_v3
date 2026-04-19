@@ -36,19 +36,23 @@ android {
         jvmTarget = JavaVersion.VERSION_17
     }
 
-defaultConfig {
-    applicationId = "com.example.census2026"
-    minSdk = 21
-    targetSdk = 35
-    versionCode = flutterVersionCode.toInteger()
-    versionName = flutterVersionName
-    
-    multiDexEnabled true   // ← أضف هذا السطر
-}
+    defaultConfig {
+        applicationId = "com.example.census2026"
+        minSdk = 21
+        targetSdk = 35
+        versionCode = flutterVersionCode.toInteger()
+        versionName = flutterVersionName
+        
+        // مهم جداً لتجنب مشاكل MultiDex
+        multiDexEnabled true
+    }
 
     buildTypes {
         release {
+            // تعطيل الـ minify والـ shrink لتجنب crash في الـ release
             signingConfig = signingConfigs.debug
+            minifyEnabled false
+            shrinkResources false
         }
     }
 }
