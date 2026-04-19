@@ -1,37 +1,47 @@
-name: Build APK (nassim_stati_2026)
+name: Build Nassim Final
 
 on:
   push:
-    branches: [ main, master ]
+    branches: [ "main" ]
   workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Java
-        uses: actions/setup-java@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
         with:
-          distribution: temurin
+          distribution: 'temurin'
           java-version: '17'
-
-      - name: Setup Flutter
-        uses: subosito/flutter-action@v2
+      - uses: subosito/flutter-action@v2
         with:
           flutter-version: '3.24.0'
 
-      - name: Install dependencies
-        run: flutter pub get
+      - name: Preparation
+        run: |
+          flutter clean
+          # السطر القادم هو الأهم: يوحد اسم المشروع مع اسم الحزمة لتفادي الخروج المفاجئ
+          flutter create . --platforms android --org com.example --project-name census2026 --overwrite
+          
+          # إضافة الصلاحيات لملف المانيفست
+          MANIFEST="android/app/src/main/AndroidManifest.xml"
+          sed -i '/<application/i \    <uses-permission android:name="android.permission.INTERNET" />' $MANIFEST
+          sed -i '/<application/i \    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />' $MANIFEST
+          sed -i '/<application/i \    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />' $MANIFEST
+          sed -i '/<application/i \    <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE" />' $MANIFEST
+          sed -i '/<application/i \    <uses-permission android:name="android.permission.CAMERA" />' $MANIFEST
+          
+          # السماح بمرور بيانات الـ HTML
+          sed -i 's/<application/<application android:usesCleartextTraffic="true"/' $MANIFEST
 
       - name: Build APK
-        run: flutter build apk --release
+        run: |
+          flutter pub get
+          flutter build apk --release --no-tree-shake-icons
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: census-apk
+          name: Census_2026_Final_Fix
           path: build/app/outputs/flutter-apk/app-release.apk
