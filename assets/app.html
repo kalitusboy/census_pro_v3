@@ -144,9 +144,7 @@
     <div class="header">📊 نظام الإحصاء 2026 - النسخة الكاملة</div>
     <div class="container">
         <div class="card">
-            <button onclick="document.getElementById('fileInp').click()">📥 استيراد القائمة الأساسية (Excel / CSV)</button>
-            <input type="file" id="fileInp" class="hidden" accept=".xlsx,.xls,.csv">
-
+            <button onclick="handleExcelImport()">📥 استيراد القائمة الأساسية (Excel / CSV)</button>
             <button class="btn-orange" onclick="calculateLogicStats()">📈 عرض الإحصائيات المفصلة والمجمعة</button>
             <button onclick="exportFullDB()" class="btn-gray">📤 تصدير قاعدة البيانات الكاملة (JSON)</button>
             <button onclick="document.getElementById('mergeInp').click()" class="btn-purple">🔄 دمج قواعد بيانات الأعوان</button>
@@ -283,6 +281,23 @@ let currentRecords = [];
 let activeID = null;
 let currentImageDataUrl = "";
 
+// أضف هذا الكود قبل سطر 335
+async function handleExcelImport() {
+    try {
+        // استدعاء فلاتر لفتح ملف الإكسل ومعالجته
+        await callFlutter('importExcel');
+        
+        // أهم خطوة: تحديث القائمة فوراً بعد الانتهاء
+        await loadAllRecords();
+        
+        alert("✅ تم الاستيراد وتحديث القائمة بنجاح");
+    } catch (e) {
+        console.error("خطأ في عملية الاستيراد:", e);
+        alert("❌ حدث خطأ أثناء الاستيراد");
+    }
+}
+
+    
 // تحميل البيانات - نستدعيها فقط بعد أن تخبرنا Flutter بأن WebView جاهز
 async function loadAllRecords() {
     const data = await callFlutter('getAll');
