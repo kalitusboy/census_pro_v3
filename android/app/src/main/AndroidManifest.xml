@@ -2,7 +2,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
-    <!-- الصلاحيات -->
+    <!-- الصلاحيات المطلوبة -->
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.CAMERA" />
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
@@ -17,8 +17,13 @@
         android:requestLegacyExternalStorage="true"
         android:fullBackupContent="true">
 
+        <!-- هذا السطر مهم جداً لـ v2 embedding -->
+        <meta-data
+            android:name="flutterEmbedding"
+            android:value="2" />
+
         <activity
-            android:name=".MainActivity"
+            android:name="${applicationName}"
             android:exported="true"
             android:launchMode="singleTop"
             android:theme="@style/LaunchTheme"
