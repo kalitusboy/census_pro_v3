@@ -36,13 +36,15 @@ android {
         jvmTarget = JavaVersion.VERSION_17
     }
 
-    defaultConfig {
-        applicationId = "com.example.census2026"
-        minSdk = 21
-        targetSdk = 35
-        versionCode = flutterVersionCode.toInteger()
-        versionName = flutterVersionName
-    }
+defaultConfig {
+    applicationId = "com.example.census2026"
+    minSdk = 21
+    targetSdk = 35
+    versionCode = flutterVersionCode.toInteger()
+    versionName = flutterVersionName
+    
+    multiDexEnabled true   // ← أضف هذا السطر
+}
 
     buildTypes {
         release {
