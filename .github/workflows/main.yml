@@ -8,6 +8,7 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -21,7 +22,7 @@ jobs:
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.24.0'
+          flutter-version: '3.29.0'      # ← محدث إلى إصدار مستقر (v1 embedding محذوف)
           channel: 'stable'
 
       - name: Verify assets
@@ -31,19 +32,6 @@ jobs:
             exit 1
           fi
           echo "✅ assets/app.html exists."
-
-      - name: Inject permissions into AndroidManifest
-        run: |
-          MANIFEST="android/app/src/main/AndroidManifest.xml"
-          # أضف الصلاحيات قبل وسوم <application>
-          sed -i '/<application/i \    <uses-permission android:name="android.permission.INTERNET" />' $MANIFEST
-          sed -i '/<application/i \    <uses-permission android:name="android.permission.CAMERA" />' $MANIFEST
-          sed -i '/<application/i \    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />' $MANIFEST
-          sed -i '/<application/i \    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />' $MANIFEST
-          sed -i '/<application/i \    <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE" />' $MANIFEST
-          # السماح بحركة المرور غير المشفرة (لـ WebView المحلي)
-          sed -i 's/<application/<application android:usesCleartextTraffic="true"/' $MANIFEST
-          echo "✅ Permissions and cleartext traffic added."
 
       - name: Install dependencies
         run: flutter pub get
