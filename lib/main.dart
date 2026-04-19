@@ -9,6 +9,10 @@ import 'export.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  final localhostServer = InAppLocalhostServer(documentRoot: 'assets', port: 8080);
+  await localhostServer.start();
+
   await Permission.camera.request();
   await Permission.storage.request();
 
@@ -22,8 +26,8 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return const MaterialApp(
       title: 'نسيم للإحصاء 2026',
-      home: WebApp(),
       debugShowCheckedModeBanner: false,
+      home: WebApp(),
     );
   }
 }
@@ -43,7 +47,7 @@ class _WebAppState extends State<WebApp> {
     return Scaffold(
       body: SafeArea(
         child: InAppWebView(
-          initialFile: "assets/app.html",
+          initialUrlRequest: URLRequest(url: WebUri('http://localhost:8080/app.html')),
           initialSettings: InAppWebViewSettings(
             javaScriptEnabled: true,
             allowFileAccessFromFileURLs: true,
@@ -55,7 +59,7 @@ class _WebAppState extends State<WebApp> {
           onWebViewCreated: (controller) {
             webViewController = controller;
 
-            // JavaScript Handlers
+            // ================== JavaScript Handlers ==================
             controller.addJavaScriptHandler(
               handlerName: 'getAll',
               callback: (args) async => await DB.getAllRecords(),
@@ -102,6 +106,27 @@ class _WebAppState extends State<WebApp> {
             );
 
             controller.addJavaScriptHandler(
+              handlerName: 'exportFullDB',
+              callback: (args) async {
+                await exportFullJson();
+                return {"status": "exported"};
+              },
+            );
+          },
+          onLoadStop: (controller, url) {
+            print("✅ WebView Loaded: $url");
+          },
+          onConsoleMessage: (controller, consoleMessage) {
+            print("JS Console: [${consoleMessage.messageLevel}] ${consoleMessage.message}");
+          },
+          onReceivedError: (controller, request, error) {
+            print("❌ WebView Error: ${error.description}");
+          },
+        ),
+      ),
+    );
+  }
+}
               handlerName: 'exportFullDB',
               callback: (args) async {
                 await exportFullJson();
