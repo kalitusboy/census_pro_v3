@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -38,12 +37,13 @@ class _WebAppState extends State<WebApp> {
   @override
   void initState() {
     super.initState();
-    _initApp();
+    _initPermissions();
   }
 
-  Future<void> _initApp() async {
-    // نطلب إذن الكاميرا فقط. التخزين يُدار عبر FilePicker دون أذونات خاصة.
+  Future<void> _initPermissions() async {
     await Permission.camera.request();
+    await Permission.storage.request();
+    await Permission.manageExternalStorage.request();
   }
 
   @override
@@ -51,18 +51,19 @@ class _WebAppState extends State<WebApp> {
     return Scaffold(
       body: SafeArea(
         child: InAppWebView(
-          // تحميل ملف HTML من assets
           initialFile: "assets/app.html",
           initialSettings: InAppWebViewSettings(
             javaScriptEnabled: true,
             allowFileAccessFromFileURLs: true,
             allowUniversalAccessFromFileURLs: true,
             mediaPlaybackRequiresUserGesture: false,
+            allowsInlineMediaPlayback: true,
+            cacheEnabled: true,
           ),
           onWebViewCreated: (controller) {
             webViewController = controller;
 
-            // ========== JavaScript Handlers ==========
+            // JavaScript Handlers
             controller.addJavaScriptHandler(
               handlerName: 'getAll',
               callback: (args) async => await DB.getAllRecords(),
@@ -115,6 +116,12 @@ class _WebAppState extends State<WebApp> {
                 return {"status": "exported"};
               },
             );
+          },
+          onLoadStop: (controller, url) {
+            print("✅ WebView Loaded Successfully: $url");
+          },
+          onConsoleMessage: (controller, consoleMessage) {
+            print("JS Console: ${consoleMessage.message}");
           },
         ),
       ),
