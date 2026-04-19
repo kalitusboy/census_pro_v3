@@ -9,7 +9,76 @@ import 'export.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // التقاط الأخطاء العامة وعرضها بدلاً من الإغلاق
+  FlutterError.onError = (FlutterErrorDetails details) {
+    FlutterError.presentError(details);
+    runApp(ErrorApp(errorDetails: details));
+  };
+
+  // التقاط الأخطاء غير المتزامنة (مثل Future/Stream)
+  PlatformDispatcher.instance.onError = (error, stack) {
+    runApp(ErrorApp(errorDetails: FlutterErrorDetails(
+      exception: error,
+      stack: stack,
+    )));
+    return true;
+  };
+
   runApp(const MyApp());
+}
+
+// شاشة لعرض الخطأ بالتفصيل
+class ErrorApp extends StatelessWidget {
+  final FlutterErrorDetails errorDetails;
+
+  const ErrorApp({super.key, required this.errorDetails});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      home: Scaffold(
+        backgroundColor: Colors.red.shade50,
+        body: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  '⚠️ حدث خطأ غير متوقع',
+                  style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.red),
+                ),
+                const SizedBox(height: 16),
+                const Text('تفاصيل الخطأ:', style: TextStyle(fontWeight: FontWeight.bold)),
+                const SizedBox(height: 8),
+                Expanded(
+                  child: SingleChildScrollView(
+                    child: SelectableText(
+                      errorDetails.exceptionAsString(),
+                      style: const TextStyle(fontFamily: 'monospace', fontSize: 12),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                const Text('مكان الخطأ:', style: TextStyle(fontWeight: FontWeight.bold)),
+                const SizedBox(height: 8),
+                Expanded(
+                  child: SingleChildScrollView(
+                    child: SelectableText(
+                      errorDetails.toString(),
+                      style: const TextStyle(fontFamily: 'monospace', fontSize: 10),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 class MyApp extends StatelessWidget {
@@ -18,7 +87,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return const MaterialApp(
-      title: 'نسيم للإحصاء 2026',
+      title: 'إحصاء 2026',
       home: WebApp(),
       debugShowCheckedModeBanner: false,
     );
@@ -42,8 +111,13 @@ class _WebAppState extends State<WebApp> {
   }
 
   Future<void> _initApp() async {
-    // نطلب إذن الكاميرا فقط. التخزين يُدار عبر FilePicker دون أذونات خاصة.
-    await Permission.camera.request();
+    try {
+      await Permission.camera.request();
+      await Permission.storage.request();
+      await Permission.manageExternalStorage.request();
+    } catch (e) {
+      debugPrint('خطأ في طلب الأذونات: $e');
+    }
   }
 
   @override
@@ -51,7 +125,6 @@ class _WebAppState extends State<WebApp> {
     return Scaffold(
       body: SafeArea(
         child: InAppWebView(
-          // تحميل ملف HTML من assets
           initialFile: "assets/app.html",
           initialSettings: InAppWebViewSettings(
             javaScriptEnabled: true,
@@ -62,7 +135,6 @@ class _WebAppState extends State<WebApp> {
           onWebViewCreated: (controller) {
             webViewController = controller;
 
-            // ========== JavaScript Handlers ==========
             controller.addJavaScriptHandler(
               handlerName: 'getAll',
               callback: (args) async => await DB.getAllRecords(),
@@ -115,6 +187,12 @@ class _WebAppState extends State<WebApp> {
                 return {"status": "exported"};
               },
             );
+          },
+          onLoadError: (controller, url, code, message) {
+            debugPrint('خطأ تحميل WebView: $code - $message');
+          },
+          onConsoleMessage: (controller, consoleMessage) {
+            debugPrint('JS Console: ${consoleMessage.message}');
           },
         ),
       ),
