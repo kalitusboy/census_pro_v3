@@ -1,3 +1,4 @@
+
 import 'package:flutter/material.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -8,6 +9,14 @@ import 'export.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // تشغيل السيرفر المحلي لتحميل assets بطريقة أكثر أماناً في الـ release
+  final InAppLocalhostServer localhostServer = InAppLocalhostServer(
+    documentRoot: 'assets',
+    port: 8080,
+  );
+  await localhostServer.start();
+
   runApp(const MyApp());
 }
 
@@ -37,13 +46,16 @@ class _WebAppState extends State<WebApp> {
   @override
   void initState() {
     super.initState();
-    _initPermissions();
+    _requestPermissions();
   }
 
-  Future<void> _initPermissions() async {
+  Future<void> _requestPermissions() async {
     await Permission.camera.request();
     await Permission.storage.request();
-    await Permission.manageExternalStorage.request();
+    // للأجهزة الحديثة
+    if (await Permission.manageExternalStorage.isDenied) {
+      await Permission.manageExternalStorage.request();
+    }
   }
 
   @override
@@ -51,7 +63,9 @@ class _WebAppState extends State<WebApp> {
     return Scaffold(
       body: SafeArea(
         child: InAppWebView(
-          initialFile: "assets/app.html",
+          initialUrlRequest: URLRequest(
+            url: WebUri('http://localhost:8080/app.html'),
+          ),
           initialSettings: InAppWebViewSettings(
             javaScriptEnabled: true,
             allowFileAccessFromFileURLs: true,
@@ -59,6 +73,7 @@ class _WebAppState extends State<WebApp> {
             mediaPlaybackRequiresUserGesture: false,
             allowsInlineMediaPlayback: true,
             cacheEnabled: true,
+            javaScriptCanOpenWindowsAutomatically: true,
           ),
           onWebViewCreated: (controller) {
             webViewController = controller;
@@ -72,8 +87,12 @@ class _WebAppState extends State<WebApp> {
             controller.addJavaScriptHandler(
               handlerName: 'saveRecord',
               callback: (args) async {
-                await DB.saveRecord(Map<String, dynamic>.from(args[0]));
-                return {"status": "saved"};
+                try {
+                  await DB.saveRecord(Map<String, dynamic>.from(args[0]));
+                  return {"status": "saved"};
+                } catch (e) {
+                  return {"status": "error", "message": e.toString()};
+                }
               },
             );
 
@@ -117,11 +136,14 @@ class _WebAppState extends State<WebApp> {
               },
             );
           },
-          onLoadStop: (controller, url) {
+          onLoadStop: (controller, url) async {
             print("✅ WebView Loaded Successfully: $url");
           },
           onConsoleMessage: (controller, consoleMessage) {
-            print("JS Console: ${consoleMessage.message}");
+            print("JS Console: ${consoleMessage.messageType} - ${consoleMessage.message}");
+          },
+          onReceivedError: (controller, request, error) {
+            print("❌ WebView Error: ${error.description}");
           },
         ),
       ),
