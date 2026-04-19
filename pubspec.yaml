@@ -12,29 +12,29 @@ dependencies:
     sdk: flutter
 
   # قاعدة البيانات
-  sqflite: ^2.3.2
-  path: ^1.9.0
+ # sqflite: ^2.3.2
+ # path: ^1.9.0
 
   # اختيار الملفات
-  file_picker: ^6.2.0
+  #file_picker: ^6.2.0
 
   # قراءة وتصدير Excel
-  excel: ^4.0.3
+  #excel: ^4.0.3
 
   # الأذونات
-  permission_handler: ^11.3.0
+ # permission_handler: ^11.3.0
 
   # WebView لعرض واجهة HTML
-  flutter_inappwebview: ^6.0.0
+ # flutter_inappwebview: ^6.0.0
 
   # مشاركة الملفات
-  share_plus: ^9.0.0
+  #share_plus: ^9.0.0
 
   # ضغط الصور في ZIP
-  archive: ^3.4.10
+  #archive: ^3.4.10
 
   # مسار المجلدات
-  path_provider: ^2.1.2
+  #path_provider: ^2.1.2
 
 dev_dependencies:
   flutter_test:
