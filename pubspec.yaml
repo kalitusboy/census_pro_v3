@@ -30,7 +30,6 @@ dev_dependencies:
 flutter:
   uses-material-design: true
 
-  # تصحيح المسافات للأصول (مهم جداً لعمل الـ WebView)
   assets:
+    - assets/
     - assets/app.html
-    
