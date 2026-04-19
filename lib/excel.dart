@@ -1,4 +1,5 @@
-import 'dart:io';
+
+import 'dart:io'; // أضفنا هذه المكتبة لقراءة الملفات من المسار
 import 'dart:typed_data';
 import 'package:file_picker/file_picker.dart';
 import 'package:excel/excel.dart';
@@ -6,23 +7,21 @@ import 'db.dart';
 import 'package:sqflite/sqflite.dart';
 
 Future<void> importExcel() async {
-  // اختيار الملف مع السماح بامتدادات الإكسل فقط
   final result = await FilePicker.platform.pickFiles(
     type: FileType.custom,
     allowedExtensions: ['xlsx', 'xls'],
-    withData: true, // محاولة جلب البيانات مباشرة
   );
 
   if (result == null || result.files.isEmpty) return;
 
   Uint8List? bytes;
-
-  // حل مشكلة أندرويد: إذا كانت bytes فارغة، نقرأ من المسار الفعلي
-  if (result.files.first.bytes != null) {
-    bytes = result.files.first.bytes;
-  } else if (result.files.first.path != null) {
+  
+  // التحقق من المسار أولاً لأن أندرويد غالباً ما يترك الـ bytes فارغة
+  if (result.files.first.path != null) {
     final file = File(result.files.first.path!);
     bytes = await file.readAsBytes();
+  } else {
+    bytes = result.files.first.bytes;
   }
 
   if (bytes == null) return;
@@ -33,7 +32,6 @@ Future<void> importExcel() async {
   for (var tableName in excel.tables.keys) {
     final sheet = excel.tables[tableName]!;
 
-    // تجاوز الصف الأول (العناوين)
     for (var row in sheet.rows.skip(1)) {
       if (row.isEmpty || row[0] == null) continue;
 
@@ -58,16 +56,13 @@ Future<void> importExcel() async {
         'imageFileName': '',
       };
 
-      // إنشاء المفتاح الفريد لمنع التكرار
+      // الحفاظ على منطق الـ uniqueKey الخاص بك
       record['uniqueKey'] = '${record['program']}_${record['address']}_${record['name']}'
           .replaceAll(' ', '_')
           .toLowerCase();
 
-      await db.insert(
-        'records', 
-        record,
-        conflictAlgorithm: ConflictAlgorithm.ignore // تجاهل إذا كان موجوداً مسبقاً
-      );
+      await db.insert('records', record,
+          conflictAlgorithm: ConflictAlgorithm.ignore);
     }
   }
 }
