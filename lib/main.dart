@@ -127,6 +127,10 @@ class _WebAppState extends State<WebApp> {
     );
   }
 }
+      ),
+    );
+  }
+}
               handlerName: 'exportFullDB',
               callback: (args) async {
                 await exportFullJson();
