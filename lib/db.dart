@@ -61,7 +61,6 @@ class DB {
           .toLowerCase();
     }
 
-    print('حفظ السجل، طول الصورة: ${record['img']?.toString().length ?? 0} حرف');
     await database.insert(
       'records',
       record,
