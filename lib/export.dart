@@ -1,11 +1,10 @@
+
 import 'dart:convert';
 import 'dart:io';
-
-import 'package:archive/archive.dart';
 import 'package:excel/excel.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
-
+import 'package:archive/archive.dart';
 import 'db.dart';
 
 Future<void> exportToExcel(List<dynamic> data) async {
@@ -23,10 +22,10 @@ Future<void> exportToExcel(List<dynamic> data) async {
     TextCellValue('مياه'),
     TextCellValue('تطهير'),
     TextCellValue('الحالة'),
-    TextCellValue('اسم الصورة'),
+    TextCellValue('اسم الصورة')
   ]);
 
-  for (final row in data) {
+  for (var row in data) {
     sheet.appendRow([
       TextCellValue(row['الاسم']?.toString() ?? ''),
       TextCellValue(row['البرنامج']?.toString() ?? ''),
@@ -38,7 +37,7 @@ Future<void> exportToExcel(List<dynamic> data) async {
       IntCellValue(int.tryParse(row['مياه']?.toString() ?? '0') ?? 0),
       IntCellValue(int.tryParse(row['تطهير']?.toString() ?? '0') ?? 0),
       TextCellValue(row['الحالة']?.toString() ?? ''),
-      TextCellValue(row['اسم_الصورة']?.toString() ?? ''),
+      TextCellValue(row['اسم_الصورة']?.toString() ?? '')
     ]);
   }
 
@@ -46,9 +45,7 @@ Future<void> exportToExcel(List<dynamic> data) async {
   if (bytes == null) return;
 
   final dir = await getApplicationDocumentsDirectory();
-  final file = File(
-    '${dir.path}/تقرير_إحصاء_${DateTime.now().toIso8601String().substring(0, 10)}.xlsx',
-  );
+  final file = File('${dir.path}/تقرير_إحصاء_${DateTime.now().toIso8601String().substring(0, 10)}.xlsx');
   await file.writeAsBytes(bytes);
   await Share.shareXFiles([XFile(file.path)], text: 'تقرير الإحصاء');
 }
@@ -56,26 +53,12 @@ Future<void> exportToExcel(List<dynamic> data) async {
 Future<void> exportImagesToZip(List<dynamic> rows) async {
   final archive = Archive();
 
-  for (final rec in rows) {
-    if (rec['img'] == null || rec['img'].toString().trim().isEmpty) continue;
-
+  for (var rec in rows) {
+    if (rec['img'] == null || rec['img'].toString().isEmpty) continue;
     try {
-      final imgValue = rec['img'].toString().trim();
-      List<int>? bytes;
-
-      if (await File(imgValue).exists()) {
-        bytes = await File(imgValue).readAsBytes();
-      } else if (imgValue.startsWith('data:image')) {
-        final base64Data = imgValue.split(',').last;
-        bytes = base64Decode(base64Data);
-      }
-
-      if (bytes == null || bytes.isEmpty) continue;
-
-      final fileName = rec['imageFileName']?.toString().isNotEmpty == true
-          ? rec['imageFileName'].toString()
-          : 'صورة_${DateTime.now().millisecondsSinceEpoch}.jpg';
-
+      final String base64Data = rec['img'].toString().split(',').last;
+      final bytes = base64Decode(base64Data);
+      final fileName = rec['imageFileName']?.toString() ?? 'صورة_${DateTime.now().millisecondsSinceEpoch}.jpg';
       archive.addFile(ArchiveFile(fileName, bytes.length, bytes));
     } catch (e) {
       print('خطأ في معالجة صورة: $e');
@@ -88,9 +71,7 @@ Future<void> exportImagesToZip(List<dynamic> rows) async {
   if (zipData == null) return;
 
   final dir = await getApplicationDocumentsDirectory();
-  final file = File(
-    '${dir.path}/صور_المستفيدين_${DateTime.now().toIso8601String().substring(0, 10)}.zip',
-  );
+  final file = File('${dir.path}/صور_المستفيدين_${DateTime.now().toIso8601String().substring(0, 10)}.zip');
   await file.writeAsBytes(zipData);
   await Share.shareXFiles([XFile(file.path)], text: 'صور المستفيدين');
 }
@@ -99,9 +80,41 @@ Future<void> exportFullJson() async {
   final allRecords = await DB.getAllRecords();
   final jsonStr = jsonEncode(allRecords);
   final dir = await getApplicationDocumentsDirectory();
-  final file = File(
-    '${dir.path}/قاعدة_إحصاء_${DateTime.now().toIso8601String().substring(0, 10)}.json',
-  );
+  final file = File('${dir.path}/قاعدة_إحصاء_${DateTime.now().toIso8601String().substring(0, 10)}.json');
   await file.writeAsString(jsonStr);
   await Share.shareXFiles([XFile(file.path)], text: 'قاعدة البيانات الكاملة');
+}
+
+Future<void> exportStatisticsToExcel(Map<String, dynamic> statsData) async {
+  final excel = Excel.createExcel();
+  
+  // الجدول الرئيسي
+  final mainSheet = excel['الإحصائيات الرئيسية'];
+  final mainHeaders = statsData['mainHeaders'] as List<dynamic>;
+  final mainRows = statsData['mainRows'] as List<dynamic>;
+  
+  mainSheet.appendRow(mainHeaders.map((h) => TextCellValue(h.toString())).toList());
+  for (var row in mainRows) {
+    mainSheet.appendRow(row.map((cell) => TextCellValue(cell.toString())).toList());
+  }
+  
+  // جدول تحليل المنتهية المشغولة
+  if (statsData['detailHeaders'] != null && statsData['detailRows'] != null) {
+    final detailSheet = excel['تحليل المنتهية المشغولة'];
+    final detailHeaders = statsData['detailHeaders'] as List<dynamic>;
+    final detailRows = statsData['detailRows'] as List<dynamic>;
+    
+    detailSheet.appendRow(detailHeaders.map((h) => TextCellValue(h.toString())).toList());
+    for (var row in detailRows) {
+      detailSheet.appendRow(row.map((cell) => TextCellValue(cell.toString())).toList());
+    }
+  }
+
+  final bytes = excel.encode();
+  if (bytes == null) return;
+
+  final dir = await getApplicationDocumentsDirectory();
+  final file = File('${dir.path}/تقرير_إحصائي_${DateTime.now().toIso8601String().substring(0, 10)}.xlsx');
+  await file.writeAsBytes(bytes);
+  await Share.shareXFiles([XFile(file.path)], text: 'تقرير إحصائي مفصل');
 }
