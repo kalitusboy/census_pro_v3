@@ -10,11 +10,14 @@ import 'export.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
+  // تشغيل السيرفر المحلي المستضاف في ملفات assets
   final localhostServer = InAppLocalhostServer(documentRoot: 'assets', port: 8080);
   await localhostServer.start();
 
+  // طلب الصلاحيات
   await Permission.camera.request();
   await Permission.storage.request();
+  await Permission.manageExternalStorage.request();
 
   runApp(const MyApp());
 }
@@ -47,6 +50,7 @@ class _WebAppState extends State<WebApp> {
     return Scaffold(
       body: SafeArea(
         child: InAppWebView(
+          // استخدام الرابط المحلي كما في كودك الأصلي
           initialUrlRequest: URLRequest(url: WebUri('http://localhost:8080/app.html')),
           initialSettings: InAppWebViewSettings(
             javaScriptEnabled: true,
@@ -60,6 +64,7 @@ class _WebAppState extends State<WebApp> {
             webViewController = controller;
 
             // ================== JavaScript Handlers ==================
+            
             controller.addJavaScriptHandler(
               handlerName: 'getAll',
               callback: (args) async => await DB.getAllRecords(),
@@ -99,6 +104,34 @@ class _WebAppState extends State<WebApp> {
 
             controller.addJavaScriptHandler(
               handlerName: 'exportImagesZip',
+              callback: (args) async {
+                await exportImagesToZip(args[0] as List<dynamic>);
+                return {"status": "done"};
+              },
+            );
+
+            controller.addJavaScriptHandler(
+              handlerName: 'exportFullDB',
+              callback: (args) async {
+                await exportFullJson();
+                return {"status": "exported"};
+              },
+            );
+          },
+          onLoadStop: (controller, url) {
+            print("✅ WebView Loaded: $url");
+          },
+          onConsoleMessage: (controller, consoleMessage) {
+            print("JS Console: [${consoleMessage.messageLevel}] ${consoleMessage.message}");
+          },
+          onReceivedError: (controller, request, error) {
+            print("❌ WebView Error: ${error.description}");
+          },
+        ),
+      ),
+    );
+  }
+}
               callback: (args) async {
                 await exportImagesToZip(args[0] as List<dynamic>);
                 return {"status": "done"};
