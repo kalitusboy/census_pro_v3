@@ -1,0 +1,607 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <meta name="theme-color" content="#0d47a1" />
+    <title>إحصاء 2026</title>
+
+    <!-- المكتبات -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&display=swap" rel="stylesheet">
+
+    <style>
+        :root { --p: #0d47a1; --s: #2e7d32; --bg: #f1f5f9; }
+        body { 
+            font-family: 'Cairo', sans-serif; 
+            background: var(--bg); 
+            margin: 0; 
+            direction: rtl; 
+            -webkit-tap-highlight-color: transparent;
+        }
+        .header { 
+            background: var(--p); 
+            color: white; 
+            padding: 15px; 
+            text-align: center; 
+            font-weight: bold; 
+            font-size: 1.1rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .container { 
+            padding: 12px; 
+            max-width: 1000px; 
+            margin: auto; 
+        }
+        .card { 
+            background: white; 
+            padding: 18px; 
+            border-radius: 16px; 
+            margin-bottom: 18px; 
+            box-shadow: 0 6px 12px rgba(0,0,0,0.06); 
+        }
+        button { 
+            background: var(--p); 
+            color: white; 
+            border: none; 
+            padding: 14px; 
+            border-radius: 12px; 
+            width: 100%; 
+            font-weight: bold; 
+            font-size: 1rem;
+            margin: 8px 0; 
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        button:active { transform: scale(0.98); }
+        .btn-green { background: var(--s); }
+        .btn-orange { background: #e67e22; }
+        .btn-purple { background: #7c3aed; }
+        .btn-gray { background: #64748b; }
+        input, select { 
+            width: 100%; 
+            padding: 14px; 
+            margin: 8px 0; 
+            border: 1px solid #cbd5e1; 
+            border-radius: 12px; 
+            box-sizing: border-box; 
+            font-family: 'Cairo'; 
+            font-size: 1rem;
+        }
+        .stats-table { 
+            width: 100%; 
+            border-collapse: collapse; 
+            margin-top: 15px; 
+            font-size: 13px; 
+        }
+        .stats-table th, .stats-table td { 
+            border: 1px solid #ddd; 
+            padding: 10px; 
+            text-align: center; 
+        }
+        .stats-table th { 
+            background: #f8fafc; 
+            color: var(--p); 
+            font-weight: 700;
+        }
+        .stats-table tr:last-child td { 
+            background: #e0f2fe; 
+            font-weight: bold; 
+            color: var(--p);
+        }
+        .list-item {
+            background: white;
+            padding: 16px;
+            border-radius: 14px;
+            margin-bottom: 10px;
+            border-right: 6px solid var(--p);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            cursor: pointer;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+        }
+        .hidden { display: none; }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        @media (max-width: 640px) {
+            .grid { grid-template-columns: 1fr; }
+        }
+        .img-prev { 
+            width: 100%; 
+            border-radius: 12px; 
+            margin-top: 12px; 
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            display: none; 
+        }
+        .small-note { 
+            font-size: 13px; 
+            color: #475569; 
+            line-height: 1.6; 
+        }
+        .badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 999px;
+            background: #e2e8f0;
+            color: #334155;
+            font-size: 13px;
+            margin: 4px 6px 4px 0;
+        }
+        .summary-box {
+            background: #f0f9ff;
+            padding: 14px;
+            border-radius: 12px;
+            margin-bottom: 15px;
+            font-size: 15px;
+        }
+    </style>
+</head>
+<body>
+
+<div id="home-screen">
+    <div class="header">📊 نظام الإحصاء 2026 - النسخة الكاملة</div>
+    <div class="container">
+        <div class="card">
+            <button onclick="handleExcelImport()">📥 استيراد القائمة الأساسية (Excel / CSV)</button>
+            <button class="btn-orange" onclick="calculateLogicStats()">📈 عرض الإحصائيات المفصلة والمجمعة</button>
+            <button onclick="exportFullDB()" class="btn-gray">📤 تصدير قاعدة البيانات الكاملة (JSON)</button>
+            <button onclick="document.getElementById('mergeInp').click()" class="btn-purple">🔄 دمج قواعد بيانات الأعوان</button>
+            <input type="file" id="mergeInp" class="hidden" accept=".json" multiple>
+
+            <button class="btn-green" onclick="exportData()">📤 تصدير النتائج النهائية (Excel)</button>
+            <button class="btn-purple" onclick="exportImagesZip()">🗜️ تصدير كل الصور ZIP</button>
+            <button onclick="showAbout()" style="background:#6c757d;">ℹ️ حول البرنامج</button>
+        </div>
+
+        <div class="grid">
+            <select id="addrFilter" onchange="renderItems()"></select>
+            <input type="text" id="nameSearch" placeholder="🔍 ابحث بالاسم أو العنوان..." oninput="renderItems()">
+        </div>
+
+        <div id="main-list"></div>
+    </div>
+</div>
+
+<div id="survey-screen" class="hidden">
+    <div class="header">📝 إتمام بيانات المستفيد</div>
+    <div class="container">
+        <div class="card">
+            <h3 id="curName"></h3>
+            <p id="birthInfo" class="small-note"></p>
+            <p id="addrProgInfo" class="small-note"></p>
+
+            <p><strong>🔗 الربط بالشبكات:</strong></p>
+            <div class="grid">
+                <label style="display:flex; align-items:center; gap:8px;"><input type="checkbox" id="e"> كهرباء</label>
+                <label style="display:flex; align-items:center; gap:8px;"><input type="checkbox" id="g"> غاز</label>
+                <label style="display:flex; align-items:center; gap:8px;"><input type="checkbox" id="w"> مياه</label>
+                <label style="display:flex; align-items:center; gap:8px;"><input type="checkbox" id="s"> تطهير</label>
+            </div>
+
+            <p><strong>🏗️ الحالة الفيزيائية للسكن:</strong></p>
+            <select id="status">
+                <option value="في طور الانجاز">في طور الانجاز</option>
+                <option value="على مستوى الاعمدة">على مستوى الاعمدة</option>
+                <option value="منتهية غير مشغولة">منتهية غير مشغولة</option>
+                <option value="منتهية ومشغولة">منتهية ومشغولة</option>
+            </select>
+
+            <button type="button" style="background:#475569;" onclick="document.getElementById('camInp').click()">📷 التقاط الصورة الميدانية</button>
+            <input type="file" id="camInp" accept="image/*" capture="camera" class="hidden">
+            <img id="prevImg" class="img-prev">
+
+            <div class="grid" style="margin-top:20px;">
+                <button onclick="saveEntry()">💾 حفظ وإتمام</button>
+                <button onclick="showHome()" style="background:#94a3b8;">🔙 رجوع</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="stats-screen" class="hidden">
+    <div class="header">📈 التقرير الإحصائي المفصل والمجمع</div>
+    <div class="container">
+        <div class="card" style="overflow-x:auto;">
+            <div id="table-container"></div>
+            <button onclick="showHome()" style="margin-top:15px;">🔙 العودة للقائمة</button>
+        </div>
+    </div>
+</div>
+
+<script>
+// ====================== أدوات مساعدة ======================
+function safeText(v) {
+    return (v === undefined || v === null) ? "" : String(v).trim();
+}
+
+function normalizeProgram(v) {
+    return safeText(v).replace(/\s+/g, " ").trim();
+}
+
+function normalizeForFileName(text) {
+    return safeText(text)
+        .replace(/[\/\\?%*:|"<>]/g, '_')
+        .replace(/\s+/g, '_')
+        .replace(/_+/g, '_')
+        .replace(/^_+|_+$/g, '')
+        .slice(0, 90);
+}
+
+function buildDisplayName(rec) {
+    const first = safeText(rec.firstName || rec['الاسم الأول']);
+    const last = safeText(rec.lastName || rec['اللقب']);
+    const full = safeText(rec.name || rec['الاسم'] || rec['الاسم الكامل']);
+    if (first || last) return [first, last].filter(Boolean).join(' ').trim();
+    return full;
+}
+
+function buildBirthInfo(rec) {
+    const d = safeText(rec.birthDate || rec['تاريخ الميلاد']);
+    const p = safeText(rec.birthPlace || rec['مكان الميلاد']);
+    if (d && p) return `📅 ${d} | 📍 ${p}`;
+    if (d) return `📅 ${d}`;
+    if (p) return `📍 ${p}`;
+    return "";
+}
+
+function buildImageFileName(rec) {
+    const name = normalizeForFileName(buildDisplayName(rec) || "مستفيد");
+    const addr = normalizeForFileName(rec.address || rec['العنوان'] || "غير_محدد");
+    const prog = normalizeForFileName(rec.program || rec['البرنامج'] || "عام");
+    const birth = normalizeForFileName([rec.birthDate || rec['تاريخ الميلاد'] || "", rec.birthPlace || rec['مكان الميلاد'] || ""].filter(Boolean).join("_"));
+    const stamp = new Date().toISOString().replace(/[:.]/g, '-');
+    return [prog, addr, name, birth, stamp].filter(Boolean).join("__") + ".jpg";
+}
+
+function escapeHtml(text) {
+    return safeText(text)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+}
+
+// ====================== التواصل مع Flutter ======================
+async function callFlutter(handlerName, args = []) {
+    if (typeof window.flutter_inappwebview === 'undefined') {
+        alert("خطأ: Flutter WebView غير متاح!");
+        return null;
+    }
+    try {
+        return await window.flutter_inappwebview.callHandler(handlerName, ...args);
+    } catch (e) {
+        console.error(`خطأ في ${handlerName}:`, e);
+        return null;
+    }
+}
+
+let currentRecords = [];
+let activeID = null;
+let currentImageDataUrl = "";
+
+// أضف هذا الكود قبل سطر 335
+async function handleExcelImport() {
+    try {
+        // استدعاء فلاتر لفتح ملف الإكسل ومعالجته
+        await callFlutter('importExcel');
+        
+        // أهم خطوة: تحديث القائمة فوراً بعد الانتهاء
+        await loadAllRecords();
+        
+        alert("✅ تم الاستيراد وتحديث القائمة بنجاح");
+    } catch (e) {
+        console.error("خطأ في عملية الاستيراد:", e);
+        alert("❌ حدث خطأ أثناء الاستيراد");
+    }
+}
+
+    
+// تحميل البيانات - نستدعيها فقط بعد أن تخبرنا Flutter بأن WebView جاهز
+async function loadAllRecords() {
+    const data = await callFlutter('getAll');
+    currentRecords = Array.isArray(data) ? data : [];
+    renderItems();
+    refreshFilters();
+}
+
+// سنقوم بتحميل البيانات يدويًا عند استلام حدث "pageLoaded" من Flutter
+window.addEventListener('flutterInAppWebViewPlatformReady', function() {
+    loadAllRecords();
+});
+
+// ====================== استيراد Excel ======================
+document.getElementById('fileInp').onchange = async function() {
+    await callFlutter('importExcel');
+    alert("✅ تم استيراد الملف بنجاح!");
+    await loadAllRecords();
+};
+
+// ====================== دمج JSON ======================
+document.getElementById('mergeInp').onchange = async function() {
+    await callFlutter('mergeData');
+    alert("✅ تم الدمج بنجاح!");
+    await loadAllRecords();
+};
+
+// ====================== عرض القائمة ======================
+function renderItems() {
+    const list = document.getElementById('main-list');
+    const search = safeText(document.getElementById('nameSearch').value).toLowerCase();
+    const filter = document.getElementById('addrFilter').value;
+    list.innerHTML = "";
+
+    currentRecords.filter(d => d.done != 1).forEach(d => {
+        const dispName = buildDisplayName(d);
+        const birthInfo = buildBirthInfo(d);
+
+        const matchSearch = !search ||
+            dispName.toLowerCase().includes(search) ||
+            safeText(d.address || d['العنوان']).toLowerCase().includes(search) ||
+            safeText(d.program || d['البرنامج']).toLowerCase().includes(search);
+
+        const matchFilter = !filter || (d.address || d['العنوان']) === filter;
+
+        if (matchSearch && matchFilter) {
+            const item = document.createElement('div');
+            item.className = 'list-item';
+            item.innerHTML = `
+                <div style="flex:1;">
+                    <strong>${escapeHtml(dispName)}</strong>
+                    ${birthInfo ? `<div class="small-note">${escapeHtml(birthInfo)}</div>` : ""}
+                    <div class="small-note">
+                        <span class="badge">${escapeHtml(d.program || d['البرنامج'] || 'عام')}</span>
+                        <span class="badge">${escapeHtml(d.address || d['العنوان'] || 'غير محدد')}</span>
+                    </div>
+                </div>
+                <div style="font-size:24px; color:var(--p);">➡</div>
+            `;
+            item.onclick = () => openSurvey(d);
+            list.appendChild(item);
+        }
+    });
+}
+
+function refreshFilters() {
+    const addrs = [...new Set(currentRecords.map(d => safeText(d.address || d['العنوان'])).filter(Boolean))];
+    const sel = document.getElementById('addrFilter');
+    sel.innerHTML = '<option value="">🔍 كل العناوين</option>';
+    addrs.forEach(a => sel.innerHTML += `<option value="${escapeHtml(a)}">${escapeHtml(a)}</option>`);
+}
+
+// ====================== فتح نموذج المستفيد ======================
+function openSurvey(d) {
+    activeID = d.id;
+    currentImageDataUrl = "";
+
+    document.getElementById('curName').innerText = buildDisplayName(d) || "مستفيد";
+    document.getElementById('birthInfo').innerText = buildBirthInfo(d);
+    document.getElementById('addrProgInfo').innerText = `العنوان: ${safeText(d.address || d['العنوان'])} | البرنامج: ${safeText(d.program || d['البرنامج'])}`;
+
+    document.getElementById('e').checked = !!d.e;
+    document.getElementById('g').checked = !!d.g;
+    document.getElementById('w').checked = !!d.w;
+    document.getElementById('s').checked = !!d.s;
+    document.getElementById('status').value = d.status || "في طور الانجاز";
+
+    document.getElementById('prevImg').style.display = "none";
+
+    document.getElementById('home-screen').className = 'hidden';
+    document.getElementById('survey-screen').className = '';
+    document.getElementById('stats-screen').className = 'hidden';
+}
+
+// ====================== التقاط الصورة ======================
+document.getElementById('camInp').onchange = e => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = ev => {
+        currentImageDataUrl = ev.target.result;
+        const img = document.getElementById('prevImg');
+        img.src = currentImageDataUrl;
+        img.style.display = 'block';
+    };
+    reader.readAsDataURL(file);
+};
+
+// ====================== حفظ البيانات ======================
+async function saveEntry() {
+    if (!activeID) {
+        alert("❌ خطأ: لم يتم تحديد المستفيد الحالي!");
+        return;
+    }
+
+    let record = currentRecords.find(r => r.id == activeID);
+    if (!record) {
+        alert("❌ خطأ: المستفيد غير موجود في الذاكرة!");
+        return;
+    }
+
+    // تحديث الحقول
+    record.done = 1;
+    record.e = document.getElementById('e').checked ? 1 : 0;
+    record.g = document.getElementById('g').checked ? 1 : 0;
+    record.w = document.getElementById('w').checked ? 1 : 0;
+    record.s = document.getElementById('s').checked ? 1 : 0;
+    record.status = document.getElementById('status').value;
+
+    // معالجة الصورة
+    if (currentImageDataUrl && currentImageDataUrl.startsWith('data:image')) {
+        record.img = currentImageDataUrl;
+        record.imageFileName = buildImageFileName(record);
+        console.log("📸 تم إرفاق صورة باسم: " + record.imageFileName);
+    } else {
+        console.log("⚠️ لم يتم التقاط صورة جديدة.");
+    }
+
+    try {
+        await callFlutter('saveRecord', [record]);
+        alert("✅ تم الحفظ بنجاح!");
+        showHome();
+    } catch (e) {
+        alert("❌ فشل الحفظ: " + e);
+        console.error(e);
+    }
+} // <-- نهاية الدالة صحيحة (لا يوجد قوس إضافي بعدها)
+
+function showHome() {
+    document.getElementById('home-screen').className = '';
+    document.getElementById('survey-screen').className = 'hidden';
+    document.getElementById('stats-screen').className = 'hidden';
+    renderItems();
+}
+
+// ====================== الإحصائيات ======================
+function calculateLogicStats() {
+    document.getElementById('home-screen').className = 'hidden';
+    document.getElementById('stats-screen').className = '';
+
+    const data = currentRecords;
+    const programs = [...new Set(data.map(d => normalizeProgram(d.program || d['البرنامج'])).filter(Boolean))];
+
+    let html = `
+        <table class="stats-table">
+            <tr>
+                <th rowspan="2">البرنامج</th>
+                <th rowspan="2">الحصة</th>
+                <th rowspan="2">منجزة</th>
+                <th colspan="4">عدد البنايات حسب الحالة</th>
+                <th colspan="4">عدد الربط بالشبكات</th>
+            </tr>
+            <tr>
+                <th>في طور الانجاز</th>
+                <th>على مستوى الاعمدة</th>
+                <th>منتهية غير مشغولة</th>
+                <th>منتهية ومشغولة</th>
+                <th>كهرباء</th>
+                <th>غاز</th>
+                <th>مياه</th>
+                <th>تطهير</th>
+            </tr>
+    `;
+
+    let grandQuota = 0, grandDone = 0;
+    let grandStatus = { "في طور الانجاز":0, "على مستوى الاعمدة":0, "منتهية غير مشغولة":0, "منتهية ومشغولة":0 };
+    let grandE = 0, grandG = 0, grandW = 0, grandS = 0;
+
+    programs.forEach(p => {
+        const pData = data.filter(d => normalizeProgram(d.program || d['البرنامج']) === p);
+        const pDone = pData.filter(d => d.done == 1 || d.done === true);
+        const pDoneCount = pDone.length;
+
+        grandQuota += pData.length;
+        grandDone += pDoneCount;
+
+        const statusCounts = {
+            "في طور الانجاز": pDone.filter(d => safeText(d.status) === "في طور الانجاز").length,
+            "على مستوى الاعمدة": pDone.filter(d => safeText(d.status) === "على مستوى الاعمدة").length,
+            "منتهية غير مشغولة": pDone.filter(d => safeText(d.status) === "منتهية غير مشغولة").length,
+            "منتهية ومشغولة": pDone.filter(d => safeText(d.status) === "منتهية ومشغولة").length
+        };
+
+        const eSum = pDone.reduce((acc, curr) => acc + Number(curr.e || 0), 0);
+        const gSum = pDone.reduce((acc, curr) => acc + Number(curr.g || 0), 0);
+        const wSum = pDone.reduce((acc, curr) => acc + Number(curr.w || 0), 0);
+        const sSum = pDone.reduce((acc, curr) => acc + Number(curr.s || 0), 0);
+
+        Object.keys(statusCounts).forEach(k => grandStatus[k] = (grandStatus[k] || 0) + statusCounts[k]);
+        grandE += eSum; grandG += gSum; grandW += wSum; grandS += sSum;
+
+        const progress = pData.length ? Math.round((pDoneCount / pData.length) * 100) : 0;
+
+        html += `
+            <tr>
+                <td>${escapeHtml(p)}</td>
+                <td>${pData.length}</td>
+                <td>${pDoneCount} (${progress}%)</td>
+                <td>${statusCounts["في طور الانجاز"]}</td>
+                <td>${statusCounts["على مستوى الاعمدة"]}</td>
+                <td>${statusCounts["منتهية غير مشغولة"]}</td>
+                <td>${statusCounts["منتهية ومشغولة"]}</td>
+                <td>${eSum}</td>
+                <td>${gSum}</td>
+                <td>${wSum}</td>
+                <td>${sSum}</td>
+            </tr>
+        `;
+    });
+
+    const totalProgress = grandQuota ? Math.round((grandDone / grandQuota) * 100) : 0;
+    html += `
+        <tr>
+            <td><strong>الإجمالي</strong></td>
+            <td><strong>${grandQuota}</strong></td>
+            <td><strong>${grandDone} (${totalProgress}%)</strong></td>
+            <td>${grandStatus["في طور الانجاز"]}</td>
+            <td>${grandStatus["على مستوى الاعمدة"]}</td>
+            <td>${grandStatus["منتهية غير مشغولة"]}</td>
+            <td>${grandStatus["منتهية ومشغولة"]}</td>
+            <td>${grandE}</td>
+            <td>${grandG}</td>
+            <td>${grandW}</td>
+            <td>${grandS}</td>
+        </tr>
+        </table>
+    `;
+
+    document.getElementById('table-container').innerHTML = `
+        <div class="summary-box">
+            <h3>الملخص العام</h3>
+            <p>إجمالي المستفيدين: <strong>${grandQuota}</strong></p>
+            <p>المنجز: <strong>${grandDone}</strong> (${totalProgress}%)</p>
+        </div>
+        ${html}
+    `;
+}
+
+// ====================== التصدير ======================
+async function exportData() {
+    const results = currentRecords.filter(d => d.done == 1 || d.done === true).map(d => ({
+        الاسم: buildDisplayName(d),
+        البرنامج: safeText(d.program || d['البرنامج']),
+        العنوان: safeText(d.address || d['العنوان']),
+        تاريخ_الميلاد: safeText(d.birthDate || d['تاريخ الميلاد']),
+        مكان_الميلاد: safeText(d.birthPlace || d['مكان الميلاد']),
+        كهرباء: d.e || 0,
+        غاز: d.g || 0,
+        مياه: d.w || 0,
+        تطهير: d.s || 0,
+        الحالة: safeText(d.status),
+        اسم_الصورة: safeText(d.imageFileName)
+    }));
+
+    await callFlutter('exportExcel', [results]);
+}
+
+async function exportImagesZip() {
+    const rows = currentRecords.filter(d => (d.done == 1 || d.done === true) && d.img);
+    if (!rows.length) return alert("لا توجد صور");
+    await callFlutter('exportImagesZip', [rows]);
+}
+
+async function exportFullDB() {
+    await callFlutter('exportFullDB');
+}
+
+// ====================== حول البرنامج ======================
+function showAbout() {
+    alert("📱 تطبيق إحصاء 2026\n\n" +
+          "الإصدار: 1.0.0\n" +
+          "الهدف: إحصاء السكن الريفي والربط بالشبكات\n" +
+          "المطور: حميتي نسيم - الحوضان\n" +
+          "للتواصل: nas.hamiti@gmail.com\n\n" +
+          "© جميع الحقوق محفوظة 2026");
+}
+
+// ====================== بدء التطبيق ======================
+window.onload = function() {
+    // لا نستدعي loadAllRecords هنا لأن Flutter قد لا يكون جاهزًا بعد
+    // بدلاً من ذلك ننتظر حدث flutterInAppWebViewPlatformReady
+    console.log("الصفحة جاهزة، بانتظار Flutter...");
+};
+</script>
+</body>
+</html>
