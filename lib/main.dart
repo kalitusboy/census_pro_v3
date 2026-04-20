@@ -1,5 +1,5 @@
 
-import 'package:flutter/material.dart';
+Import 'package:flutter/material.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'db.dart';
@@ -50,7 +50,6 @@ class _WebAppState extends State<WebApp> {
     return Scaffold(
       body: SafeArea(
         child: InAppWebView(
-          // استخدام الرابط المحلي كما في كودك الأصلي
           initialUrlRequest: URLRequest(url: WebUri('http://localhost:8080/app.html')),
           initialSettings: InAppWebViewSettings(
             javaScriptEnabled: true,
@@ -64,7 +63,6 @@ class _WebAppState extends State<WebApp> {
             webViewController = controller;
 
             // ================== JavaScript Handlers ==================
-            
             controller.addJavaScriptHandler(
               handlerName: 'getAll',
               callback: (args) async => await DB.getAllRecords(),
