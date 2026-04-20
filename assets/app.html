@@ -154,6 +154,7 @@
 
             <button class="btn-green" onclick="exportData()">📤 تصدير النتائج النهائية (Excel)</button>
             <button class="btn-purple" onclick="exportImagesZip()">🗜️ تصدير كل الصور ZIP</button>
+            <button onclick="showAbout()" style="background:#6c757d;">ℹ️ حول البرنامج</button>
         </div>
 
         <div class="grid">
@@ -393,11 +394,18 @@ document.getElementById('camInp').onchange = e => {
 
 // ====================== حفظ البيانات ======================
 async function saveEntry() {
-    if (!activeID) return;
+    if (!activeID) {
+        alert("❌ خطأ: لم يتم تحديد المستفيد الحالي!");
+        return;
+    }
 
     let record = currentRecords.find(r => r.id == activeID);
-    if (!record) return;
+    if (!record) {
+        alert("❌ خطأ: المستفيد غير موجود في الذاكرة!");
+        return;
+    }
 
+    // تحديث الحقول
     record.done = 1;
     record.e = document.getElementById('e').checked ? 1 : 0;
     record.g = document.getElementById('g').checked ? 1 : 0;
@@ -405,15 +413,24 @@ async function saveEntry() {
     record.s = document.getElementById('s').checked ? 1 : 0;
     record.status = document.getElementById('status').value;
 
-    if (currentImageDataUrl) {
+    // معالجة الصورة
+    if (currentImageDataUrl && currentImageDataUrl.startsWith('data:image')) {
         record.img = currentImageDataUrl;
         record.imageFileName = buildImageFileName(record);
+        console.log("📸 تم إرفاق صورة باسم: " + record.imageFileName);
+    } else {
+        console.log("⚠️ لم يتم التقاط صورة جديدة.");
     }
 
-    await callFlutter('saveRecord', [record]);
-    alert("✅ تم الحفظ بنجاح!");
-    showHome();
-}
+    try {
+        await callFlutter('saveRecord', [record]);
+        alert("✅ تم الحفظ بنجاح!");
+        showHome();
+    } catch (e) {
+        alert("❌ فشل الحفظ: " + e);
+        console.error(e);
+    }
+} // <-- نهاية الدالة صحيحة (لا يوجد قوس إضافي بعدها)
 
 function showHome() {
     document.getElementById('home-screen').className = '';
@@ -554,6 +571,16 @@ async function exportFullDB() {
     await callFlutter('exportFullDB');
 }
 
+ // ====================== حول البرنامج ======================
+function showAbout() {
+    alert("📱 تطبيق إحصاء 2026\n\n" +
+          "الإصدار: 1.0.0\n" +
+          "الهدف: إحصاء السكن الريفي والربط بالشبكات\n" +
+          "المطور: حميتي نسيم - الحوضان\n" +
+          "للتواصل: nas.hamiti@gmail.com\n\n" +
+          "© جميع الحقوق محفوظة 2026");
+}
+    
 // ====================== بدء التطبيق ======================
 window.onload = function() {
     // لا نستدعي loadAllRecords هنا لأن Flutter قد لا يكون جاهزًا بعد
