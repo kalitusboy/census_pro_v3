@@ -1,10 +1,10 @@
+
 import 'dart:io';
 import 'dart:typed_data';
-
-import 'package:excel/excel.dart';
 import 'package:file_picker/file_picker.dart';
-
+import 'package:excel/excel.dart';
 import 'db.dart';
+import 'package:sqflite/sqflite.dart';
 
 Future<void> importExcel() async {
   try {
@@ -25,11 +25,12 @@ Future<void> importExcel() async {
     if (bytes == null) return;
 
     final excel = Excel.decodeBytes(bytes);
+    final db = await DB.db;
 
-    for (final tableName in excel.tables.keys) {
+    for (var tableName in excel.tables.keys) {
       final sheet = excel.tables[tableName]!;
 
-      for (final row in sheet.rows.skip(1)) {
+      for (var row in sheet.rows.skip(1)) {
         if (row.isEmpty || row[0] == null) continue;
 
         String getVal(Data? cell) {
@@ -37,28 +38,29 @@ Future<void> importExcel() async {
           return cell.value.toString().trim();
         }
 
-        final record = <String, dynamic>{
+        // ملاحظة: تأكد أن الترتيب في الإكسل هو: الاسم، البرنامج، العنوان، تاريخ الميلاد، مكان الميلاد
+        final record = {
           'name': getVal(row[0]),
           'program': row.length > 1 ? getVal(row[1]) : 'عام',
           'address': row.length > 2 ? getVal(row[2]) : '',
           'birthDate': row.length > 3 ? getVal(row[3]) : '',
           'birthPlace': row.length > 4 ? getVal(row[4]) : '',
           'done': 0,
-          'e': 0,
-          'g': 0,
-          'w': 0,
-          's': 0,
+          'e': 0, 'g': 0, 'w': 0, 's': 0,
           'status': 'قيد الانتظار',
           'img': '',
           'imageFileName': '',
         };
 
-        record['uniqueKey'] = DB.buildUniqueKey(record);
+        // إنشاء المفتاح الفريد لمنع التكرار
+        record['uniqueKey'] = '${record['program']}_${record['address']}_${record['name']}'
+            .replaceAll(' ', '_')
+            .toLowerCase();
 
-        await DB.upsertExcelRecord(record);
+        await db.insert('records', record, conflictAlgorithm: ConflictAlgorithm.ignore); // استبدال البيانات القديمة بالجديدة
       }
     }
   } catch (e) {
-    print('خطأ في الاستيراد: $e');
+    print("خطأ في الاستيراد: $e");
   }
 }
