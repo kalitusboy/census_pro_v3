@@ -466,14 +466,16 @@ function calculateLogicStats() {
     const data = currentRecords;
     const programs = [...new Set(data.map(d => normalizeProgram(d.program || d['البرنامج'])).filter(Boolean))];
 
-    let html = `
+    // تجهيز البيانات للجدول الرئيسي
+    let mainHtml = `
+        <h3>📋 الإحصائيات العامة</h3>
         <table class="stats-table">
             <tr>
                 <th rowspan="2">البرنامج</th>
                 <th rowspan="2">الحصة</th>
                 <th rowspan="2">منجزة</th>
                 <th colspan="4">عدد البنايات حسب الحالة</th>
-                <th colspan="4">عدد الربط بالشبكات</th>
+                <th colspan="4">عدد الربط بالشبكات (كل الحالات)</th>
             </tr>
             <tr>
                 <th>في طور الانجاز</th>
@@ -487,9 +489,33 @@ function calculateLogicStats() {
             </tr>
     `;
 
+    // مصفوفات لتخزين بيانات التصدير
+    const mainHeaders = [
+        'البرنامج', 'الحصة', 'منجزة', 'نسبة الإنجاز %',
+        'في طور الانجاز', 'على مستوى الاعمدة', 'منتهية غير مشغولة', 'منتهية ومشغولة',
+        'كهرباء (كل الحالات)', 'غاز (كل الحالات)', 'مياه (كل الحالات)', 'تطهير (كل الحالات)'
+    ];
+    const mainRows = [];
+
     let grandQuota = 0, grandDone = 0;
     let grandStatus = { "في طور الانجاز":0, "على مستوى الاعمدة":0, "منتهية غير مشغولة":0, "منتهية ومشغولة":0 };
     let grandE = 0, grandG = 0, grandW = 0, grandS = 0;
+
+    // بيانات الجدول التفصيلي (للمنتهية المشغولة فقط)
+    let detailHtml = `
+        <h3 style="margin-top:30px;">🔌 تحليل الربط بالشبكات للمنازل المنتهية والمشغولة</h3>
+        <table class="stats-table">
+            <tr>
+                <th>البرنامج</th>
+                <th>عدد المنتهية المشغولة</th>
+                <th>كهرباء</th>
+                <th>غاز</th>
+                <th>مياه</th>
+                <th>تطهير</th>
+            </tr>
+    `;
+    const detailHeaders = ['البرنامج', 'عدد المنتهية المشغولة', 'كهرباء', 'غاز', 'مياه', 'تطهير'];
+    const detailRows = [];
 
     programs.forEach(p => {
         const pData = data.filter(d => normalizeProgram(d.program || d['البرنامج']) === p);
@@ -516,7 +542,8 @@ function calculateLogicStats() {
 
         const progress = pData.length ? Math.round((pDoneCount / pData.length) * 100) : 0;
 
-        html += `
+        // صف الجدول الرئيسي
+        mainHtml += `
             <tr>
                 <td>${escapeHtml(p)}</td>
                 <td>${pData.length}</td>
@@ -531,10 +558,40 @@ function calculateLogicStats() {
                 <td>${sSum}</td>
             </tr>
         `;
+
+        mainRows.push([
+            p, pData.length, pDoneCount, progress + '%',
+            statusCounts["في طور الانجاز"], statusCounts["على مستوى الاعمدة"],
+            statusCounts["منتهية غير مشغولة"], statusCounts["منتهية ومشغولة"],
+            eSum, gSum, wSum, sSum
+        ]);
+
+        // بيانات الجدول التفصيلي (فقط للمنتهية المشغولة)
+        const occupied = pDone.filter(d => safeText(d.status) === "منتهية ومشغولة");
+        const occCount = occupied.length;
+        if (occCount > 0) {
+            const occE = occupied.reduce((acc, curr) => acc + Number(curr.e || 0), 0);
+            const occG = occupied.reduce((acc, curr) => acc + Number(curr.g || 0), 0);
+            const occW = occupied.reduce((acc, curr) => acc + Number(curr.w || 0), 0);
+            const occS = occupied.reduce((acc, curr) => acc + Number(curr.s || 0), 0);
+            
+            detailHtml += `
+                <tr>
+                    <td>${escapeHtml(p)}</td>
+                    <td>${occCount}</td>
+                    <td>${occE}</td>
+                    <td>${occG}</td>
+                    <td>${occW}</td>
+                    <td>${occS}</td>
+                </tr>
+            `;
+            detailRows.push([p, occCount, occE, occG, occW, occS]);
+        }
     });
 
+    // صف الإجمالي للجدول الرئيسي
     const totalProgress = grandQuota ? Math.round((grandDone / grandQuota) * 100) : 0;
-    html += `
+    mainHtml += `
         <tr>
             <td><strong>الإجمالي</strong></td>
             <td><strong>${grandQuota}</strong></td>
@@ -550,17 +607,60 @@ function calculateLogicStats() {
         </tr>
         </table>
     `;
+    mainRows.push([
+        'الإجمالي', grandQuota, grandDone, totalProgress + '%',
+        grandStatus["في طور الانجاز"], grandStatus["على مستوى الاعمدة"],
+        grandStatus["منتهية غير مشغولة"], grandStatus["منتهية ومشغولة"],
+        grandE, grandG, grandW, grandS
+    ]);
 
-    document.getElementById('table-container').innerHTML = `
+    // إجمالي الجدول التفصيلي (للمنتهية المشغولة)
+    const totalOcc = grandStatus["منتهية ومشغولة"];
+    if (totalOcc > 0) {
+        const totalOccE = currentRecords.filter(d => (d.done == 1 || d.done === true) && safeText(d.status) === "منتهية ومشغولة")
+            .reduce((acc, curr) => acc + Number(curr.e || 0), 0);
+        const totalOccG = currentRecords.filter(d => (d.done == 1 || d.done === true) && safeText(d.status) === "منتهية ومشغولة")
+            .reduce((acc, curr) => acc + Number(curr.g || 0), 0);
+        const totalOccW = currentRecords.filter(d => (d.done == 1 || d.done === true) && safeText(d.status) === "منتهية ومشغولة")
+            .reduce((acc, curr) => acc + Number(curr.w || 0), 0);
+        const totalOccS = currentRecords.filter(d => (d.done == 1 || d.done === true) && safeText(d.status) === "منتهية ومشغولة")
+            .reduce((acc, curr) => acc + Number(curr.s || 0), 0);
+        
+        detailHtml += `
+            <tr style="background:#e0f2fe; font-weight:bold;">
+                <td>الإجمالي</td>
+                <td>${totalOcc}</td>
+                <td>${totalOccE}</td>
+                <td>${totalOccG}</td>
+                <td>${totalOccW}</td>
+                <td>${totalOccS}</td>
+            </tr>
+        `;
+        detailRows.push(['الإجمالي', totalOcc, totalOccE, totalOccG, totalOccW, totalOccS]);
+    }
+    detailHtml += '</table>';
+
+    // تجميع كل HTML
+    const finalHtml = `
         <div class="summary-box">
             <h3>الملخص العام</h3>
             <p>إجمالي المستفيدين: <strong>${grandQuota}</strong></p>
             <p>المنجز: <strong>${grandDone}</strong> (${totalProgress}%)</p>
         </div>
-        ${html}
+        ${mainHtml}
+        ${detailHtml}
     `;
-}
 
+    document.getElementById('table-container').innerHTML = finalHtml;
+
+    // تخزين بيانات التصدير
+    currentStatsData = {
+        mainHeaders: mainHeaders,
+        mainRows: mainRows,
+        detailHeaders: detailHeaders,
+        detailRows: detailRows
+    };
+}
 // ====================== التصدير ======================
 async function exportData() {
     const results = currentRecords.filter(d => d.done == 1 || d.done === true).map(d => ({
