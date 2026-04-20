@@ -127,28 +127,3 @@ class _WebAppState extends State<WebApp> {
     );
   }
 }
-      ),
-    );
-  }
-}
-              handlerName: 'exportFullDB',
-              callback: (args) async {
-                await exportFullJson();
-                return {"status": "exported"};
-              },
-            );
-          },
-          onLoadStop: (controller, url) {
-            print("✅ WebView Loaded: $url");
-          },
-          onConsoleMessage: (controller, consoleMessage) {
-            print("JS Console: [${consoleMessage.messageLevel}] ${consoleMessage.message}");
-          },
-          onReceivedError: (controller, request, error) {
-            print("❌ WebView Error: ${error.description}");
-          },
-        ),
-      ),
-    );
-  }
-}
