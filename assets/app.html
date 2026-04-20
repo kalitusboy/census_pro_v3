@@ -661,6 +661,15 @@ function calculateLogicStats() {
         detailRows: detailRows
     };
 }
+
+async function exportStatistics() {
+    if (!currentStatsData.mainHeaders) {
+        alert("لا توجد بيانات إحصائية لعرضها");
+        return;
+    }
+    await callFlutter('exportStatisticsExcel', [currentStatsData]);
+    alert("✅ جاري تصدير التقرير الإحصائي...");
+}
 // ====================== التصدير ======================
 async function exportData() {
     const results = currentRecords.filter(d => d.done == 1 || d.done === true).map(d => ({
