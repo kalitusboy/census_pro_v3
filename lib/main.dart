@@ -1,5 +1,5 @@
 
-Import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'db.dart';
@@ -10,14 +10,11 @@ import 'export.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // تشغيل السيرفر المحلي المستضاف في ملفات assets
   final localhostServer = InAppLocalhostServer(documentRoot: 'assets', port: 8080);
   await localhostServer.start();
 
-  // طلب الصلاحيات
   await Permission.camera.request();
   await Permission.storage.request();
-  await Permission.manageExternalStorage.request();
 
   runApp(const MyApp());
 }
@@ -109,6 +106,27 @@ class _WebAppState extends State<WebApp> {
             );
 
             controller.addJavaScriptHandler(
+              handlerName: 'exportFullDB',
+              callback: (args) async {
+                await exportFullJson();
+                return {"status": "exported"};
+              },
+            );
+          },
+          onLoadStop: (controller, url) {
+            print("✅ WebView Loaded: $url");
+          },
+          onConsoleMessage: (controller, consoleMessage) {
+            print("JS Console: [${consoleMessage.messageLevel}] ${consoleMessage.message}");
+          },
+          onReceivedError: (controller, request, error) {
+            print("❌ WebView Error: ${error.description}");
+          },
+        ),
+      ),
+    );
+  }
+}
               handlerName: 'exportFullDB',
               callback: (args) async {
                 await exportFullJson();
