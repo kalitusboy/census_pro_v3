@@ -115,6 +115,13 @@ class _WebAppState extends State<WebApp> {
                 return {"status": "exported"};
               },
             );
+            controller.addJavaScriptHandler(
+              handlerName: 'exportStatisticsExcel',
+              callback: (args) async {
+                await exportStatisticsToExcel(args[0] as Map<String, dynamic>);
+                return {"status": "exported"};
+              },
+            );
           },
           onLoadStop: (controller, url) {
             print("✅ WebView Loaded: $url");
