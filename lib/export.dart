@@ -54,16 +54,34 @@ Future<void> exportImagesToZip(List<dynamic> rows) async {
   final archive = Archive();
 
   for (var rec in rows) {
-    if (rec['img'] == null || rec['img'].toString().isEmpty) continue;
+    final imgPath = rec['img']?.toString();
+    if (imgPath == null || imgPath.isEmpty) continue;
+    
     try {
-      final String base64Data = rec['img'].toString().split(',').last;
-      final bytes = base64Decode(base64Data);
-      final fileName = rec['imageFileName']?.toString() ?? 'صورة_${DateTime.now().millisecondsSinceEpoch}.jpg';
-      archive.addFile(ArchiveFile(fileName, bytes.length, bytes));
+      final file = File(imgPath);
+      if (await file.exists()) {
+        final bytes = await file.readAsBytes();
+        final fileName = rec['imageFileName']?.toString() ?? file.path.split('/').last;
+        archive.addFile(ArchiveFile(fileName, bytes.length, bytes));
+      }
     } catch (e) {
       print('خطأ في معالجة صورة: $e');
     }
   }
+
+  if (archive.isEmpty) {
+    print('لم يتم العثور على أي صور صالحة.');
+    return;
+  }
+
+  final zipData = ZipEncoder().encode(archive);
+  if (zipData == null) return;
+
+  final dir = await getApplicationDocumentsDirectory();
+  final file = File('${dir.path}/صور_المستفيدين_${DateTime.now().toIso8601String().substring(0, 10)}.zip');
+  await file.writeAsBytes(zipData);
+  await Share.shareXFiles([XFile(file.path)], text: 'صور المستفيدين');
+}
 
   if (archive.isEmpty) return;
 
