@@ -1,9 +1,30 @@
 
 import 'dart:convert';
+import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'package:sqflite/sqflite.dart';
+import 'package:path_provider/path_provider.dart';
 import 'db.dart';
 
+/// دالة مساعدة لحفظ صورة من base64 إلى ملف وإرجاع المسار
+Future<String> _saveImageFromBase64(String base64, String fileName) async {
+  try {
+    final bytes = base64Decode(base64.split(',').last);
+    final dir = await getApplicationDocumentsDirectory();
+    final imgDir = Directory('${dir.path}/census_images');
+    if (!await imgDir.exists()) {
+      await imgDir.create(recursive: true);
+    }
+    final file = File('${imgDir.path}/$fileName');
+    await file.writeAsBytes(bytes);
+    return file.path;
+  } catch (e) {
+    print('❌ خطأ في حفظ الصورة أثناء الدمج: $e');
+    return '';
+  }
+}
+
+/// دمج ملفات JSON من أعوان الإحصاء مع حماية البيانات المنجزة
 Future<void> mergeData() async {
   final result = await FilePicker.platform.pickFiles(
     allowMultiple: true,
@@ -48,6 +69,18 @@ Future<void> mergeData() async {
 
         // 2. إذا كان السجل في الملف منجزاً (done=1)، نقوم بتحديث السجل الموجود
         if (recordMap['done'] == 1 || recordMap['done'] == true) {
+          
+          // ===== تحسين: معالجة الصورة إذا كانت بصيغة base64 =====
+          if (recordMap['img'] != null &&
+              recordMap['img'].toString().startsWith('data:image')) {
+            final fileName = recordMap['imageFileName'] ??
+                'image_${DateTime.now().millisecondsSinceEpoch}.jpg';
+            final filePath = await _saveImageFromBase64(recordMap['img'], fileName);
+            if (filePath.isNotEmpty) {
+              recordMap['img'] = filePath; // استبدال base64 بمسار الملف
+            }
+          }
+
           // نحضر البيانات التي نريد تحديثها (فقط الحقول المتعلقة بالإنجاز)
           final updateMap = {
             'done': 1,
@@ -72,9 +105,9 @@ Future<void> mergeData() async {
         }
         // إذا كان done=0، لا نفعل شيئاً (نترك السجل الموجود كما هو)
       }
-      print('تم دمج الملف بنجاح: ${file.name}');
+      print('✅ تم دمج الملف بنجاح: ${file.name}');
     } catch (e) {
-      print('خطأ في دمج ملف: ${file.name} - $e');
+      print('❌ خطأ في دمج ملف: ${file.name} - $e');
     }
   }
 }
