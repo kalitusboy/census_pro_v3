@@ -56,7 +56,7 @@ Future<void> exportImagesToZip(List<dynamic> rows) async {
   for (var rec in rows) {
     final imgPath = rec['img']?.toString();
     if (imgPath == null || imgPath.isEmpty) continue;
-    
+
     try {
       final file = File(imgPath);
       if (await file.exists()) {
@@ -70,20 +70,9 @@ Future<void> exportImagesToZip(List<dynamic> rows) async {
   }
 
   if (archive.isEmpty) {
-    print('لم يتم العثور على أي صور صالحة.');
+    print('لا توجد صور صالحة للتصدير.');
     return;
   }
-
-  final zipData = ZipEncoder().encode(archive);
-  if (zipData == null) return;
-
-  final dir = await getApplicationDocumentsDirectory();
-  final file = File('${dir.path}/صور_المستفيدين_${DateTime.now().toIso8601String().substring(0, 10)}.zip');
-  await file.writeAsBytes(zipData);
-  await Share.shareXFiles([XFile(file.path)], text: 'صور المستفيدين');
-}
-
-  if (archive.isEmpty) return;
 
   final zipData = ZipEncoder().encode(archive);
   if (zipData == null) return;
@@ -105,23 +94,23 @@ Future<void> exportFullJson() async {
 
 Future<void> exportStatisticsToExcel(Map<String, dynamic> statsData) async {
   final excel = Excel.createExcel();
-  
+
   // الجدول الرئيسي
   final mainSheet = excel['الإحصائيات الرئيسية'];
   final mainHeaders = statsData['mainHeaders'] as List<dynamic>;
   final mainRows = statsData['mainRows'] as List<dynamic>;
-  
+
   mainSheet.appendRow(mainHeaders.map((h) => TextCellValue(h.toString())).toList());
   for (var row in mainRows) {
     mainSheet.appendRow(row.map((cell) => TextCellValue(cell.toString())).toList());
   }
-  
+
   // جدول تحليل المنتهية المشغولة
   if (statsData['detailHeaders'] != null && statsData['detailRows'] != null) {
     final detailSheet = excel['تحليل المنتهية المشغولة'];
     final detailHeaders = statsData['detailHeaders'] as List<dynamic>;
     final detailRows = statsData['detailRows'] as List<dynamic>;
-    
+
     detailSheet.appendRow(detailHeaders.map((h) => TextCellValue(h.toString())).toList());
     for (var row in detailRows) {
       detailSheet.appendRow(row.map((cell) => TextCellValue(cell.toString())).toList());
